@@ -313,7 +313,7 @@ internal fun TagMap(
             val now = SystemClock.uptimeMillis() - start
             rings.forEachIndexed { k, layer ->
                 val t = ((now + k * period / 2) % period) / period
-                layer?.setProperties(PF.circleRadius(8f + 13f * t), PF.circleOpacity((1f - t) * 0.3f))
+                layer?.setProperties(PF.circleRadius(9f + 15f * t), PF.circleOpacity((1f - t) * 0.3f))
             }
             kotlinx.coroutines.delay(33)
         }

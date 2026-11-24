@@ -293,6 +293,12 @@ OpenFreeMap map in light/dark, the saved map choice, the blue arrow, the glow do
 work on their phone. Why the APK is bigger since 4.6 (~29 MB to ~41 MB): MapLibre ships a native
 rendering library (arm64 only, as the build filters ABIs for Chaquopy) plus its Java/Kotlin layer.
 
+## 4.7.3 - Glow dot a little bigger
+
+The owner: "make glowing dot just a little bit bigger". The dot radius went up about 15%, from 9/7.5 dp
+to 10.5/8.6 dp (selected/other), and the halo rings from 8-21 px to 9-24 px. It is still well under the
+4.7 size (14/11.5 dp), and your arrow stays drawn above the dots.
+
 ## Repository upload
 
 The owner asked for the project on GitHub with detailed commit messages, the APK, and documentation

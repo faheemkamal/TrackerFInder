@@ -29,8 +29,8 @@ object MapArt {
         val key = "dot|$color|$selected"
         return cache.getOrPut(key) {
             val d = ctx.resources.displayMetrics.density
-            val r = (if (selected) 9f else 7.5f) * d        // dot radius incl. white border
-            val border = (if (selected) 2.6f else 2.2f) * d
+            val r = (if (selected) 10.5f else 8.6f) * d       // dot radius incl. white border
+            val border = (if (selected) 2.9f else 2.5f) * d
             val pad = 4f * d                                 // room for the shadow
             val s = (2 * (r + pad)).toInt()
             val bmp = Bitmap.createBitmap(s, s, Bitmap.Config.ARGB_8888)
