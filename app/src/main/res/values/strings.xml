@@ -1,0 +1,6 @@
+<resources>
+    <string name="app_name">Tracker Finder</string>
+    <string name="widget_description">See which of your trackers are in range</string>
+    <string name="tag_widget_description">Last spot of your Find Hub tag on a small map</string>
+    <string name="tile_label">Find tracker</string>
+</resources>
