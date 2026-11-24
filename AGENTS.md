@@ -20,7 +20,7 @@ been used during development**; say so honestly when reporting results.
 ```
 - Lint must have **0 errors** (it fails the build); warnings are tolerated.
 - Bump `versionCode`/`versionName` in `app/build.gradle.kts` **and** the version text at the bottom
-  of `ui/MoreScreen.kt` for every delivered build. Current: 14 / "4.7".
+  of `ui/MoreScreen.kt` for every delivered build. Current: 15 / "4.7.1".
 - Release is signed with the debug key on purpose so new APKs install over old ones. If you change the
   signing key, the owner must uninstall (and loses local data) - ask first.
 - Robolectric/screenshot tests were not set up (Maven Central throttling in the build environment).
@@ -82,6 +82,9 @@ Python (`app/src/main/python/`): `tagapp.py` (functions Kotlin calls, return JSO
   (`prefetchZoomDelta = 0`). Esri tile URLs are `z/y/x`. CARTO needs an API key now - don't switch back.
 - `TagMap` keeps everything as GeoJSON sources updated in `LaunchedEffect`s; base-map changes call
   `setStyle`, which drops our layers, so `addLayers` and the images are re-added on every style load.
+- **Don't use MapLibre `HeatmapLayer`**: it crashed the owner's phone in 4.7 (likely native/GPU, with
+  texture mode). The heatmap is two blurred `CircleLayer`s (`heat`, `heat-core`). Map updates in
+  `TagMap` are wrapped in try/catch so a drawing error is logged, not fatal.
 - The map credit line is a Compose overlay (MapLibre's own attribution/logo are off); keep it visible.
 - Keep `TagMap` callback params stable (`remember`) so a GPS fix doesn't restart effects.
 - Android allows ~5 BLE scan starts per 30 s per app; `ScanViewModel.applyScan` throttles. Don't add

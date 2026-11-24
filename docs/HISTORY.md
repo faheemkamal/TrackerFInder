@@ -268,6 +268,19 @@ selected tag. Tag colour is a fixed warm coral (`TagCoral`, #FF5A4E) so a tag ca
 with the blue phone arrow. Tap a dot for the tag's name and last-seen time (unchanged). The 4.6
 keyring-tag drawing is gone; the map widget uses the same dot.
 
+## 4.7.1 - Heatmap crash fix
+
+The owner reported "heat map crashed twice" on 4.7. No crash log was available. The only new thing on
+the heatmap path since 4.5 was MapLibre's native `HeatmapLayer` (4.6), which renders through an
+offscreen framebuffer; with the map in texture mode on some phones' GPUs that can fail natively, which
+no Kotlin try/catch can stop. Because 4.6 also started saving the Path/Heatmap choice, the History
+page reopened straight into the heatmap, which explains the second crash.
+
+Fix: the heatmap is now two blurred circle layers (orange glow + smaller red core), whose opacity
+scales with the number of reports so busy places pile up into a hot spot. This looks close to the old
+osmdroid heatmap. All map data updates and the style-load callback are wrapped in try/catch, so a
+Kotlin-side map error is logged and the map just stays as it was. Not verified on the device yet.
+
 ## Repository upload
 
 The owner asked for the project on GitHub with detailed commit messages, the APK, and documentation

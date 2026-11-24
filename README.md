@@ -9,7 +9,7 @@ person's personal use. It does two jobs:
    with an unofficial client and shows the tag's reported locations on a map, keeps a history, and
    sends alerts. This part comes from [Tag Tracker Open](#licence-and-credits) and GoogleFindMyTools.
 
-> Current version: **4.7** (versionCode 14). Ready-to-install APK: [`releases/TrackerFinder-4.7.apk`](releases/TrackerFinder-4.7.apk).
+> Current version: **4.7.1** (versionCode 15). Ready-to-install APK: [`releases/TrackerFinder-4.7.1.apk`](releases/TrackerFinder-4.7.1.apk).
 > Full step-by-step story and design decisions: [`docs/HISTORY.md`](docs/HISTORY.md).
 > Notes for AI agents and new developers: [`AGENTS.md`](AGENTS.md).
 
@@ -164,7 +164,7 @@ reports back. See [Known limitations](#known-limitations-and-untested-areas).
 
 ## Install (for the user)
 
-1. On the phone, download [`releases/TrackerFinder-4.7.apk`](releases/TrackerFinder-4.7.apk) and open it.
+1. On the phone, download [`releases/TrackerFinder-4.7.1.apk`](releases/TrackerFinder-4.7.1.apk) and open it.
    Allow "install unknown apps" for your browser/files app if asked.
 2. Allow "Nearby devices" and "Location" when the app asks. Notifications are needed for alerts.
 3. For the map: Map tab → step 1 sign in to Google → step 2 unlock encryption (your phone's screen lock).

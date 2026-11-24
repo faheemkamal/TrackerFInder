@@ -57,7 +57,6 @@ import org.maplibre.android.maps.Style
 import org.maplibre.android.style.expressions.Expression
 import org.maplibre.android.style.layers.CircleLayer
 import org.maplibre.android.style.layers.FillLayer
-import org.maplibre.android.style.layers.HeatmapLayer
 import org.maplibre.android.style.layers.Layer
 import org.maplibre.android.style.layers.LineLayer
 import org.maplibre.android.style.layers.Property
@@ -188,7 +187,10 @@ internal fun TagMap(
         val m = map ?: return@LaunchedEffect
         style = null
         m.prefetchZoomDelta = if (MapTiles.allowPrefetch(provider)) 4 else 0
-        m.setStyle(MapTiles.style(provider, dark)) { s -> addLayers(s); style = s }
+        m.setStyle(MapTiles.style(provider, dark)) { s ->
+            runCatching { addLayers(s) }.onFailure { android.util.Log.w("TagMap", "addLayers failed", it) }
+            style = s
+        }
     }
 
     // Pins and phone arrow are bitmaps; re-add them if the theme colours change.
@@ -235,6 +237,8 @@ internal fun TagMap(
     // Tags, path, heatmap, points, area and camera.
     LaunchedEffect(style, ui, fence, main) {
         val s = style ?: return@LaunchedEffect
+        // Never let a drawing problem take the app down: log it and keep the map as it is.
+        try {
         val m = map ?: return@LaunchedEffect
         val h = handle ?: return@LaunchedEffect
         val geo = if (main) emptyList() else ui.geoHistory
@@ -242,6 +246,12 @@ internal fun TagMap(
         s.put("fence", fence?.let { Feature.fromGeometry(MapArt.circle(it.lat, it.lon, it.radiusM.toDouble())) })
         val heat = ui.showHeat && !main && geo.isNotEmpty()
         s.src("heat")?.setGeoJson(FeatureCollection.fromFeatures(if (heat) line.map { Feature.fromGeometry(it) } else emptyList()))
+        if (heat) {
+            // Stronger blobs when there are few reports, lighter ones when there are thousands.
+            val a = (6f / line.size.coerceAtLeast(6)).coerceIn(0.04f, 0.6f) * 1.6f
+            s.getLayer("heat")?.setProperties(PF.circleOpacity(a.coerceAtMost(0.6f)))
+            s.getLayer("heat-core")?.setProperties(PF.circleOpacity((a * 0.8f).coerceAtMost(0.5f)))
+        }
         if (!heat && line.size >= 2) {
             val upto = (ui.replayIndex ?: (line.size - 1)).coerceIn(0, line.size - 1)
             s.put("path-all", Feature.fromGeometry(LineString.fromLngLats(line)))
@@ -289,6 +299,7 @@ internal fun TagMap(
             }
         }
         m.triggerRepaint()
+        } catch (e: Exception) { android.util.Log.w("TagMap", "map update failed", e) }
     }
 
     // Glow dot halo: two soft rings that keep spreading out from each tag (only while on screen).
@@ -340,15 +351,16 @@ private fun addLayers(s: Style) {
     add(LineLayer("fence-line", "fence").withProperties(PF.lineWidth(2f)))
     add(FillLayer("acc-fill", "acc").withProperties(PF.fillOpacity(0.12f)))
     add(LineLayer("acc-line", "acc").withProperties(PF.lineWidth(1f), PF.lineOpacity(0.35f)))
-    add(HeatmapLayer("heat", "heat").withProperties(
-        PF.heatmapRadius(Expression.interpolate(Expression.linear(), Expression.zoom(), Expression.stop(10, 14), Expression.stop(16, 34))),
-        PF.heatmapIntensity(Expression.interpolate(Expression.linear(), Expression.zoom(), Expression.stop(10, 0.6), Expression.stop(16, 1.4))),
-        PF.heatmapOpacity(0.85f),
-        PF.heatmapColor(Expression.interpolate(Expression.linear(), Expression.heatmapDensity(),
-            Expression.stop(0, Expression.rgba(255, 200, 0, 0)),
-            Expression.stop(0.25, Expression.rgba(255, 190, 0, 0.45)),
-            Expression.stop(0.6, Expression.rgb(255, 120, 0)),
-            Expression.stop(1, Expression.rgb(210, 25, 15)))),
+    // Heatmap, drawn as soft blurred circles that pile up where the tag spends time. (4.6 used
+    // MapLibre's HeatmapLayer, which crashed on the owner's phone; plain circle layers are safe.)
+    val heatR = Expression.interpolate(Expression.exponential(1.6), Expression.zoom(),
+        Expression.stop(8, 10), Expression.stop(13, 22), Expression.stop(17, 46))
+    add(CircleLayer("heat", "heat").withProperties(
+        PF.circleRadius(heatR), PF.circleBlur(1f), PF.circleColor(android.graphics.Color.rgb(255, 140, 0)), PF.circleOpacity(0.3f),
+    ))
+    add(CircleLayer("heat-core", "heat").withProperties(
+        PF.circleRadius(Expression.product(Expression.literal(0.45f), heatR)), PF.circleBlur(1f),
+        PF.circleColor(android.graphics.Color.rgb(215, 30, 20)), PF.circleOpacity(0.25f),
     ))
     val round = arrayOf(PF.lineCap(Property.LINE_CAP_ROUND), PF.lineJoin(Property.LINE_JOIN_ROUND))
     add(LineLayer("path-all", "path-all").withProperties(*round, PF.lineWidth(4f), PF.lineOpacity(0.35f)))
