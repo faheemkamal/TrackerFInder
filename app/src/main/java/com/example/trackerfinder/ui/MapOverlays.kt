@@ -6,74 +6,48 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Path
-import android.graphics.PorterDuff
-import android.graphics.PorterDuffXfermode
 import android.graphics.RectF
 import org.maplibre.geojson.Point
 import org.maplibre.geojson.Polygon
 import kotlin.math.cos
 import kotlin.math.sin
 
+/** Tag colour on maps: warm coral, deliberately far from the blue of your phone's arrow. */
+const val TagCoral: Int = 0xFFFF5A4E.toInt()
+
 /** Our own map artwork, drawn in code (no copied icons). */
 object MapArt {
     private val cache = HashMap<String, Bitmap>()
 
     /**
-     * A little tracker tag: a rounded-square fob in the tag's colour, a keyring loop with a hole on
-     * top, a soft "button" in the middle, and a short pointer underneath whose tip marks the spot.
-     * The pointer tip is at the very bottom centre of the bitmap (anchor "bottom").
+     * A tag: the "glow dot". A solid dot in [color] (coral by default, so it can never be mistaken
+     * for the blue arrow that marks your phone) with a thick white border, a soft drop shadow and a
+     * faint inner shine. The halo rings around it are drawn and animated by the map (TagMap).
+     * Centred: anchor the middle of the bitmap on the tag's position.
      */
     fun tagPin(ctx: Context, color: Int, selected: Boolean): Bitmap {
-        val key = "tag|$color|$selected"
+        val key = "dot|$color|$selected"
         return cache.getOrPut(key) {
             val d = ctx.resources.displayMetrics.density
-            val half = (if (selected) 19f else 15f) * d      // half the fob's width
-            val ring = 2.6f * d                              // white border
-            val loopR = half * 0.42f                         // keyring loop
-            val holeR = loopR * 0.45f
-            val stem = 8f * d
-            val pad = 5f * d                                 // room for the shadow
-            val w = (2 * (half + pad)).toInt()
-            val top = pad + loopR * 1.1f                     // fob starts below the loop
-            val h = (top + 2 * half + stem).toInt() + 1
-            val bmp = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+            val r = (if (selected) 14f else 11.5f) * d      // dot radius incl. white border
+            val border = (if (selected) 4f else 3.5f) * d
+            val pad = 6f * d                                 // room for the shadow
+            val s = (2 * (r + pad)).toInt()
+            val bmp = Bitmap.createBitmap(s, s, Bitmap.Config.ARGB_8888)
             val c = Canvas(bmp)
-            val cx = w / 2f
-            val body = RectF(cx - half, top, cx + half, top + 2 * half)
-            val corner = half * 0.5f
+            val cx = s / 2f
             val p = Paint(Paint.ANTI_ALIAS_FLAG)
-
-            // White silhouette with a soft shadow: loop, fob and pointer.
             p.color = Color.WHITE
-            p.setShadowLayer(3.5f * d, 0f, 1.2f * d, 0x55000000)
-            c.drawCircle(cx, top, loopR, p)
-            c.drawRoundRect(body, corner, corner, p)
-            c.drawPath(Path().apply {
-                moveTo(cx - half * 0.38f, body.bottom - 1f * d)
-                lineTo(cx, h.toFloat())
-                lineTo(cx + half * 0.38f, body.bottom - 1f * d)
-                close()
-            }, p)
+            p.setShadowLayer(4f * d, 0f, 1.5f * d, 0x66000000)
+            c.drawCircle(cx, cx, r, p)
             p.clearShadowLayer()
-
-            // Coloured face and loop.
             p.color = color
-            val face = RectF(body.left + ring, body.top + ring, body.right - ring, body.bottom - ring)
-            c.drawRoundRect(face, corner - ring, corner - ring, p)
-            c.drawCircle(cx, top, loopR - ring, p)
-
-            // Keyring hole, punched right through.
-            p.xfermode = PorterDuffXfermode(PorterDuff.Mode.CLEAR)
-            c.drawCircle(cx, top - loopR * 0.15f, holeR, p)
-            p.xfermode = null
-
-            // Soft round "button" and a little shine.
-            p.color = 0x55FFFFFF
-            c.drawCircle(cx, face.centerY(), half * 0.42f, p)
-            p.color = 0xCCFFFFFF.toInt()
-            c.drawCircle(cx, face.centerY(), half * 0.22f, p)
-            p.color = 0x33FFFFFF
-            c.drawRoundRect(RectF(face.left + 2f * d, face.top + 2f * d, face.right - 2f * d, face.top + face.height() * 0.34f), corner * 0.6f, corner * 0.6f, p)
+            c.drawCircle(cx, cx, r - border, p)
+            // Faint shine on the upper half so it reads as a lit bead, not a flat disc.
+            p.shader = android.graphics.RadialGradient(cx - (r - border) * 0.3f, cx - (r - border) * 0.35f, (r - border),
+                0x55FFFFFF, 0x00FFFFFF, android.graphics.Shader.TileMode.CLAMP)
+            c.drawCircle(cx, cx, r - border, p)
+            p.shader = null
             bmp
         }
     }

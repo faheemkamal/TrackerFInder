@@ -100,10 +100,10 @@ class TagWidget : AppWidgetProvider() {
                     tile(ctx, tx, ty)?.let { c.drawBitmap(it, (tx * 256 - left).toFloat(), (ty * 256 - top).toFloat(), null) }
                 }
             }
-            val pin = MapArt.tagPin(ctx, 0xFF2E7CF6.toInt(), true)
+            val pin = MapArt.tagPin(ctx, com.example.trackerfinder.ui.TagCoral, true)
             val scale = 0.8f
             val pw = pin.width * scale; val ph = pin.height * scale
-            c.drawBitmap(Bitmap.createScaledBitmap(pin, pw.toInt(), ph.toInt(), true), w / 2f - pw / 2, h / 2f - ph, Paint(Paint.FILTER_BITMAP_FLAG))
+            c.drawBitmap(Bitmap.createScaledBitmap(pin, pw.toInt(), ph.toInt(), true), w / 2f - pw / 2, h / 2f - ph / 2, Paint(Paint.FILTER_BITMAP_FLAG))
             Paint().apply { textSize = 10f; color = 0xFF555555.toInt(); isAntiAlias = true }.let { c.drawText("© OpenStreetMap", 4f, h - 4f, it) }
             out
         }

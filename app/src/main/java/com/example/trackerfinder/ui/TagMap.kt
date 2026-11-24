@@ -103,7 +103,7 @@ class MapHandle internal constructor(private val map: MapLibreMap, private val d
 
 /**
  * The map used on the Map tab and the History page (MapLibre). Draws, bottom to top: area circle,
- * accuracy circle, heatmap or path (with replay progress), saved points, replay dot, pulse rings
+ * accuracy circle, heatmap or path (with replay progress), saved points, replay dot, halo rings
  * under the selected tag, your phone (blue arrow + accuracy), and the tag pins on top.
  *
  * The base map comes from [MapTiles]; it's re-read from settings each time the map is created,
@@ -126,7 +126,6 @@ internal fun TagMap(
     val dark = MaterialTheme.colorScheme.background.let { (0.299 * it.red + 0.587 * it.green + 0.114 * it.blue) < 0.5 }
     val pathColor = MaterialTheme.colorScheme.primary.toArgb()
     val fenceColor = MaterialTheme.colorScheme.tertiary.toArgb()
-    val otherColor = MaterialTheme.colorScheme.secondary.toArgb()
     val meColor = MeBlue.toArgb()
     val provider by MapTiles.provider.collectAsStateWithLifecycle()
 
@@ -193,17 +192,17 @@ internal fun TagMap(
     }
 
     // Pins and phone arrow are bitmaps; re-add them if the theme colours change.
-    LaunchedEffect(style, pathColor, otherColor, meColor) {
+    LaunchedEffect(style, pathColor, meColor) {
         val s = style ?: return@LaunchedEffect
-        s.addImage("pin-sel", MapArt.tagPin(ctx, pathColor, true))
-        s.addImage("pin-other", MapArt.tagPin(ctx, otherColor, false))
+        s.addImage("pin-sel", MapArt.tagPin(ctx, TagCoral, true))
+        s.addImage("pin-other", MapArt.tagPin(ctx, TagCoral, false))
         s.addImage("me", MapArt.meArrow(ctx, meColor))
         s.getLayer("path-all")?.setProperties(PF.lineColor(pathColor))
         s.getLayer("path-done")?.setProperties(PF.lineColor(pathColor))
         s.getLayer("pts")?.setProperties(PF.circleColor(pathColor))
         s.getLayer("replay")?.setProperties(PF.circleColor(pathColor))
-        s.getLayer("pulse1")?.setProperties(PF.circleColor(pathColor))
-        s.getLayer("pulse2")?.setProperties(PF.circleColor(pathColor))
+        s.getLayer("pulse1")?.setProperties(PF.circleColor(TagCoral))
+        s.getLayer("pulse2")?.setProperties(PF.circleColor(TagCoral))
         s.getLayer("acc-fill")?.setProperties(PF.fillColor(pathColor))
         s.getLayer("acc-line")?.setProperties(PF.lineColor(pathColor))
         s.getLayer("fence-fill")?.setProperties(PF.fillColor(fenceColor))
@@ -260,7 +259,11 @@ internal fun TagMap(
         s.put("acc", 
             sel?.lastLat?.let { lat -> sel.lastAccuracy?.takeIf { it > 0 }?.let { Feature.fromGeometry(MapArt.circle(lat, sel.lastLon!!, it)) } },
         )
-        s.put("pulse", if (main && sel?.lastLat != null) Feature.fromGeometry(Point.fromLngLat(sel.lastLon!!, sel.lastLat)) else null)
+        // Halo rings around every tag with a location (the "glow dot").
+        s.src("pulse")?.setGeoJson(FeatureCollection.fromFeatures(ui.devices.mapNotNull { d ->
+            val lat = d.lastLat ?: return@mapNotNull null
+            Feature.fromGeometry(Point.fromLngLat(d.lastLon ?: return@mapNotNull null, lat))
+        }))
         s.src("pins")?.setGeoJson(FeatureCollection.fromFeatures(ui.devices.mapNotNull { d ->
             val lat = d.lastLat ?: return@mapNotNull null
             val lon = d.lastLon ?: return@mapNotNull null
@@ -288,11 +291,10 @@ internal fun TagMap(
         m.triggerRepaint()
     }
 
-    // Gentle expanding rings under the selected tag (main map only, only while on screen).
-    LaunchedEffect(style, main) {
+    // Glow dot halo: two soft rings that keep spreading out from each tag (only while on screen).
+    LaunchedEffect(style) {
         val s = style ?: return@LaunchedEffect
-        if (!main) return@LaunchedEffect
-        val period = 2200f
+        val period = 2400f
         val start = SystemClock.uptimeMillis()
         val rings = listOf(s.getLayer("pulse1"), s.getLayer("pulse2"))
         while (true) {
@@ -300,7 +302,7 @@ internal fun TagMap(
             val now = SystemClock.uptimeMillis() - start
             rings.forEachIndexed { k, layer ->
                 val t = ((now + k * period / 2) % period) / period
-                layer?.setProperties(PF.circleRadius(10f + 34f * t), PF.circleOpacity((1f - t) * 0.35f))
+                layer?.setProperties(PF.circleRadius(14f + 22f * t), PF.circleOpacity((1f - t) * 0.32f))
             }
             kotlinx.coroutines.delay(33)
         }
@@ -363,7 +365,7 @@ private fun addLayers(s: Style) {
         PF.iconAllowOverlap(true), PF.iconIgnorePlacement(true),
     ))
     add(SymbolLayer("pins", "pins").withProperties(
-        PF.iconImage(Expression.get("icon")), PF.iconAnchor(Property.ICON_ANCHOR_BOTTOM),
+        PF.iconImage(Expression.get("icon")), PF.iconAnchor(Property.ICON_ANCHOR_CENTER),
         PF.iconAllowOverlap(true), PF.iconIgnorePlacement(true),
         PF.symbolSortKey(Expression.get("z")), PF.symbolZOrder(Property.SYMBOL_Z_ORDER_SOURCE),
     ))

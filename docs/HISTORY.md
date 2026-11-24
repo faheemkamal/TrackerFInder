@@ -258,6 +258,16 @@ make the tag look like a tag instead of the letter from the tag name".
 - Not tested on a device: OpenFreeMap tile loading, compass direction, and gestures inside the
   History list's map card.
 
+## 4.7 - "Glow dot" tag marker
+
+The owner was shown a few marker ideas and picked "Glow dot". Each tag is now a solid dot (14 dp
+radius when selected, 11.5 dp otherwise) with a thick white border and drop shadow, inside two soft
+halo rings that spread out and fade (circle layers "pulse1"/"pulse2", 2.4 s cycle, ~30 fps, only while
+the map is on screen). The rings now surround every tag on both the main map and History, not just the
+selected tag. Tag colour is a fixed warm coral (`TagCoral`, #FF5A4E) so a tag can never be confused
+with the blue phone arrow. Tap a dot for the tag's name and last-seen time (unchanged). The 4.6
+keyring-tag drawing is gone; the map widget uses the same dot.
+
 ## Repository upload
 
 The owner asked for the project on GitHub with detailed commit messages, the APK, and documentation
