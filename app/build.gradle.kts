@@ -13,8 +13,8 @@ android {
         applicationId = "com.example.trackerfinder"
         minSdk = 26
         targetSdk = 35
-        versionCode = 15
-        versionName = "4.7.1"
+        versionCode = 16
+        versionName = "4.7.2"
         // The Find Hub engine ships native Python libraries; real phones are 64-bit ARM.
         ndk { abiFilters += listOf("arm64-v8a") }
     }

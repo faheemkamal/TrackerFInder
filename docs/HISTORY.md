@@ -281,6 +281,13 @@ scales with the number of reports so busy places pile up into a hot spot. This l
 osmdroid heatmap. All map data updates and the style-load callback are wrapped in try/catch, so a
 Kotlin-side map error is logged and the map just stays as it was. Not verified on the device yet.
 
+## 4.7.2 - Smaller glow dot, arrow on top
+
+The owner: "the glow dot is too big. it hides the arrow when together". The dot went from 14/11.5 dp
+radius to 9/7.5 dp (selected/other), with a thinner white border and shadow. The halo rings now grow
+from 8 to 21 px instead of 14 to 36. The "me" symbol layer is now added after "pins", so your blue
+arrow is always drawn above the tag dots.
+
 ## Repository upload
 
 The owner asked for the project on GitHub with detailed commit messages, the APK, and documentation

@@ -20,7 +20,7 @@ been used during development**; say so honestly when reporting results.
 ```
 - Lint must have **0 errors** (it fails the build); warnings are tolerated.
 - Bump `versionCode`/`versionName` in `app/build.gradle.kts` **and** the version text at the bottom
-  of `ui/MoreScreen.kt` for every delivered build. Current: 15 / "4.7.1".
+  of `ui/MoreScreen.kt` for every delivered build. Current: 16 / "4.7.2".
 - Release is signed with the debug key on purpose so new APKs install over old ones. If you change the
   signing key, the owner must uninstall (and loses local data) - ask first.
 - Robolectric/screenshot tests were not set up (Maven Central throttling in the build environment).

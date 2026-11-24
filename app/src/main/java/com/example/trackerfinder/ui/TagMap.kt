@@ -313,7 +313,7 @@ internal fun TagMap(
             val now = SystemClock.uptimeMillis() - start
             rings.forEachIndexed { k, layer ->
                 val t = ((now + k * period / 2) % period) / period
-                layer?.setProperties(PF.circleRadius(14f + 22f * t), PF.circleOpacity((1f - t) * 0.32f))
+                layer?.setProperties(PF.circleRadius(8f + 13f * t), PF.circleOpacity((1f - t) * 0.3f))
             }
             kotlinx.coroutines.delay(33)
         }
@@ -371,15 +371,16 @@ private fun addLayers(s: Style) {
     add(CircleLayer("pulse2", "pulse").withProperties(PF.circleOpacity(0f), PF.circlePitchAlignment(Property.CIRCLE_PITCH_ALIGNMENT_MAP)))
     add(FillLayer("me-fill", "me-acc").withProperties(PF.fillOpacity(0.13f)))
     add(LineLayer("me-line", "me-acc").withProperties(PF.lineWidth(1f), PF.lineOpacity(0.4f)))
-    add(SymbolLayer("me", "me").withProperties(
-        PF.iconImage("me"), PF.iconRotate(Expression.get("rot")),
-        PF.iconRotationAlignment(Property.ICON_ROTATION_ALIGNMENT_MAP),
-        PF.iconAllowOverlap(true), PF.iconIgnorePlacement(true),
-    ))
     add(SymbolLayer("pins", "pins").withProperties(
         PF.iconImage(Expression.get("icon")), PF.iconAnchor(Property.ICON_ANCHOR_CENTER),
         PF.iconAllowOverlap(true), PF.iconIgnorePlacement(true),
         PF.symbolSortKey(Expression.get("z")), PF.symbolZOrder(Property.SYMBOL_Z_ORDER_SOURCE),
+    ))
+    // Your arrow always sits above the tag dots.
+    add(SymbolLayer("me", "me").withProperties(
+        PF.iconImage("me"), PF.iconRotate(Expression.get("rot")),
+        PF.iconRotationAlignment(Property.ICON_ROTATION_ALIGNMENT_MAP),
+        PF.iconAllowOverlap(true), PF.iconIgnorePlacement(true),
     ))
 }
 

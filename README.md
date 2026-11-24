@@ -9,7 +9,7 @@ person's personal use. It does two jobs:
    with an unofficial client and shows the tag's reported locations on a map, keeps a history, and
    sends alerts. This part comes from [Tag Tracker Open](#licence-and-credits) and GoogleFindMyTools.
 
-> Current version: **4.7.1** (versionCode 15). Ready-to-install APK: [`releases/TrackerFinder-4.7.1.apk`](releases/TrackerFinder-4.7.1.apk).
+> Current version: **4.7.2** (versionCode 16). Ready-to-install APK: [`releases/TrackerFinder-4.7.2.apk`](releases/TrackerFinder-4.7.2.apk).
 > Full step-by-step story and design decisions: [`docs/HISTORY.md`](docs/HISTORY.md).
 > Notes for AI agents and new developers: [`AGENTS.md`](AGENTS.md).
 
@@ -73,7 +73,7 @@ reports back. See [Known limitations](#known-limitations-and-untested-areas).
     current spot, or remove it), Check all tags now, Refresh tag list from Google, Open Google Find Hub.
 - Map drawing (MapLibre): each tag is a "glow dot": a coral dot with a thick white border and
   shadow, inside two soft halo rings that keep spreading out (coral so it never looks like your blue
-  arrow; the selected tag is a little larger and on top), accuracy circle, area-alert circle, your phone as a blue pointer arrow that turns with the compass, with
+  arrow; the selected tag is a little larger; your arrow is always drawn above the dots), accuracy circle, area-alert circle, your phone as a blue pointer arrow that turns with the compass, with
   an accuracy circle; camera flies to the tag you pick. Tap a pin for its name and last-seen time.
   A small credit line for the map source is always shown (tap it to open the source's site).
 - Buttons: go to **my location**, **show all tags**. Busy indicator while Google is being asked.
@@ -164,7 +164,7 @@ reports back. See [Known limitations](#known-limitations-and-untested-areas).
 
 ## Install (for the user)
 
-1. On the phone, download [`releases/TrackerFinder-4.7.1.apk`](releases/TrackerFinder-4.7.1.apk) and open it.
+1. On the phone, download [`releases/TrackerFinder-4.7.2.apk`](releases/TrackerFinder-4.7.2.apk) and open it.
    Allow "install unknown apps" for your browser/files app if asked.
 2. Allow "Nearby devices" and "Location" when the app asks. Notifications are needed for alerts.
 3. For the map: Map tab → step 1 sign in to Google → step 2 unlock encryption (your phone's screen lock).

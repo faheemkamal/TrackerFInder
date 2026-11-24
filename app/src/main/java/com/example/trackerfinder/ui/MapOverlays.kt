@@ -29,16 +29,16 @@ object MapArt {
         val key = "dot|$color|$selected"
         return cache.getOrPut(key) {
             val d = ctx.resources.displayMetrics.density
-            val r = (if (selected) 14f else 11.5f) * d      // dot radius incl. white border
-            val border = (if (selected) 4f else 3.5f) * d
-            val pad = 6f * d                                 // room for the shadow
+            val r = (if (selected) 9f else 7.5f) * d        // dot radius incl. white border
+            val border = (if (selected) 2.6f else 2.2f) * d
+            val pad = 4f * d                                 // room for the shadow
             val s = (2 * (r + pad)).toInt()
             val bmp = Bitmap.createBitmap(s, s, Bitmap.Config.ARGB_8888)
             val c = Canvas(bmp)
             val cx = s / 2f
             val p = Paint(Paint.ANTI_ALIAS_FLAG)
             p.color = Color.WHITE
-            p.setShadowLayer(4f * d, 0f, 1.5f * d, 0x66000000)
+            p.setShadowLayer(2.5f * d, 0f, 1f * d, 0x66000000)
             c.drawCircle(cx, cx, r, p)
             p.clearShadowLayer()
             p.color = color
