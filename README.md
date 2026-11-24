@@ -1,135 +1,134 @@
 # Tracker Finder
 
-A small Android app that shows the live Bluetooth signal from a Hoco E96 (or any BLE tracker)
-so you can tell whether you are getting closer or further away.
+An Android app for finding a **Hoco E96** Bluetooth tracker (or any BLE tracker), made for one
+person's personal use. It does two jobs:
 
-## What it does
-- Scans for Bluetooth Low Energy devices and flags ones that look like trackers
-  (Google Find Hub, Apple Find My, Fast Pair, or named "hoco"/"E96").
-- Tap your tracker to open the finder screen: a big circle that goes blue → yellow → red as you get
-  closer, a "Getting warmer / colder" trend, smoothed and raw signal (dBm), a rough distance,
-  a 60-second graph, and an optional beep that speeds up as you get closer (like a metal detector).
-- "Calibrate at 1 m" improves the distance guess for your phone and tracker.
-- Trackers change their Bluetooth address about every 15 minutes for privacy. If the selected one
-  goes quiet for 8 s and a new tracker of the same type appears, the app follows it automatically.
+1. **Nearby (Bluetooth):** listens to the tracker's Bluetooth signal and turns its strength into
+   hot/cold feedback, a rough distance, beeps, vibration and a compass "which way" mode.
+2. **Anywhere (Google Find Hub):** the E96 is a Google Find Hub tag. The app signs in to Find Hub
+   with an unofficial client and shows the tag's reported locations on a map, keeps a history, and
+   sends alerts. This part comes from [Tag Tracker Open](#licence-and-credits) and GoogleFindMyTools.
 
-## Home (default tab)
+> Current version: **4.5** (versionCode 12). Ready-to-install APK: [`releases/TrackerFinder-4.5.apk`](releases/TrackerFinder-4.5.apk).
+> Full step-by-step story and design decisions: [`docs/HISTORY.md`](docs/HISTORY.md).
+> Notes for AI agents and new developers: [`AGENTS.md`](AGENTS.md).
 
-The app opens on Home: a summary of how many favorites are in Bluetooth range, every Find Hub tag with its
-last location, accuracy and age (Map, History, Share buttons), quick actions (Scan, Map, Check now,
-Park & guard) and a Checks & alerts card (interval, last and next check, stored locations, which alerts are on).
+**Status:** builds, unit tests and Android lint pass in CI-like conditions (a Linux container), but
+**nothing has been run on a real phone by the developer**. The person using it installs the APK and
+reports back. See [Known limitations](#known-limitations-and-untested-areas).
 
-## New in 4.5
+---
 
-- Find my phone (More → Find my phone): learns what signal your tracker sends when its button is pressed, then rings the phone loudly when it hears it close by. Works only if the tracker sends such a signal.
-- Quiet hours and safe places (More): no alerts at night; no left-behind alerts while the phone is at a safe place.
-- Street addresses on Home, the map sheet, History list and the timeline (Android geocoder, cached).
-- History: Path/Heatmap switch and a "Places visited" timeline (stops of 10+ minutes).
-- Tag battery: read from the tag's Bluetooth advert using its identity key (FMDN hashed flags), warning when low. Only updates when the phone hears the tag.
-- Quick Settings tile "Find tracker" and a "Tag on map" home-screen widget.
+## Features
 
-## Audit fixes (4.4)
+### Tabs
+| Tab | What it shows |
+| --- | --- |
+| **Home** (opens by default) | Summary ("2 of 3 trackers nearby"), every Find Hub tag with address, age, accuracy and battery, saved Bluetooth trackers with in-range status, quick actions (Scan, Map, Check now, Park & guard), and a Checks & alerts card. |
+| **Nearby** | Live list of Bluetooth devices, trackers first. Tap one to open the finder. |
+| **Map** | Full-screen map with a draggable bottom sheet: your Find Hub tags, or one tag's details and actions. History opens from here. |
+| **Favorites** | Saved Bluetooth trackers with nicknames, status, Find button, left-behind alert switch. |
+| **More** | Appearance, map provider, app lock, Find my phone, quiet hours & safe places, Find Hub settings, finder settings, widgets, help, licences. |
 
-- Bluetooth scanning is fast only in the finder and Nearby list, gentle on Home/Favorites, and off on Map/More.
-- Screen stays on only while the finder is open. Device list updates at most twice a second.
-- Turning Bluetooth off no longer causes false "left behind" alerts; scanning resumes when it's back on.
-- "Check now" no longer doubles the background check schedule; manual checks now trigger movement/area alerts and backups.
-- App lock hides the app from the recent-apps preview. The sign-in key bridge only accepts Google pages.
-- Release build is shrunk with R8 (about 29 MB instead of 37 MB), signed with the same debug key.
-- Your phone shows on the map as a small phone icon.
+### Nearby finder (Bluetooth)
+- Hot/cold circle, smoothed and raw dBm, zone ("Very close", "Near"…), rough metres, trend, 60 s chart.
+- Beep and vibration that speed up as you get closer; "Calibrate at 1 m".
+- **Direction mode:** hold the phone against your chest and turn in a circle; your body blocks the
+  signal, so the strongest compass sector points at the tracker.
+- Follows the tracker across its ~15-minute Bluetooth address rotation.
 
-## Map look (4.3)
+### Find Hub (anywhere)
+- Map with round initial-badge pins, accuracy halo, pulse on the selected tag, your phone as a small
+  phone icon with a compass cone, fly-to camera, "my location" and "fit all" buttons.
+- Actions: Play sound (ring), Locate now, Find nearby (opens the Bluetooth finder), Directions,
+  History, Share, Rename, area alert, Park & guard.
+- **History:** ranges (today, 24 h, 2/7/30/90 days, 1 year, custom), path or **heatmap**, replay,
+  trip stats, individual points, **Places visited** timeline (stays of 10+ min with addresses),
+  CSV/GPX export, every saved point.
+- **Automatic checks** every 10 min by default (10/15/30/60/120), even when the app is closed.
+- **Alerts:** movement (>150 m), area (leave/return), left-behind (Bluetooth), low tag battery,
+  optional status notification after each check. Notification buttons: Ring tag, Open in Maps.
+- **Quiet hours** (no alerts at night) and **safe places** (no left-behind alerts at home).
+- **Backups:** Google Drive folder, or a CSV file you choose; CSV import/restore; login-file export/import.
+- **Tag battery:** decoded from the tag's own Bluetooth advert (Google's API doesn't return it).
 
-Full-screen map with a draggable bottom sheet: a list of your tags, or one tag's details with round action
-buttons (Play sound, Locate, Find nearby, Directions, History, Share) and Park & guard. Tag pins are round
-badges with the tag's initial, an accuracy halo and a soft pulse; picking a tag flies the camera to it.
-Your phone shows as a blue dot with an accuracy circle and a compass cone; the top-right buttons jump to
-you or fit all tags. All artwork is drawn in code (no Google icons or branding).
+### Extras
+- **Find my phone:** learn what your tracker sends when its button is pressed, then ring the phone
+  loudly when that signal is heard close by (only works if the tracker sends something new).
+- Widgets: "My trackers" (Bluetooth status) and "Tag on map" (last spot on a mini map).
+- Quick Settings tile "Find tracker".
+- App lock (password + hint, PBKDF2 hash), hidden from recent-apps preview when on.
+- Light/dark/system theme; Material You colours.
 
-## Added in 4.2 (Tag Tracker Open parity)
+---
 
-- Park & guard button on the Map tab and Home (arms movement alerts from the current position).
-- Share location from the tag menu or Home card.
-- 24 h history range; "Show individual points" switch; accuracy circle around the last location.
-- Map and History refresh themselves every minute while open; "Refresh tag list from Google" in the tag menu.
-- Alert notifications have Ring tag and Open in Maps buttons.
-- More → Find Hub: check status notification, unrestricted battery use, import history from CSV, 2 h interval.
-- More → Privacy: app lock (password + hint, relocks after a minute in the background).
-- More → Help, privacy & legal.
+## Install (for the user)
 
-## Favorites
-Open a tracker from **Nearby** and tap the star to add it to **Favorites** with a nickname (Keys,
-Wallet, Bag…). The Favorites tab shows each one as "In range", "Possibly nearby" or "Last seen …",
-with a **Find** button that opens the finder straight away. Rename, remove or open Google Find Hub
-from each card's menu. With exactly one favorite, the app opens it automatically on launch.
+1. On the phone, download [`releases/TrackerFinder-4.5.apk`](releases/TrackerFinder-4.5.apk) and open it.
+   Allow "install unknown apps" for your browser/files app if asked.
+2. Allow "Nearby devices" and "Location" when the app asks. Notifications are needed for alerts.
+3. For the map: Map tab → step 1 sign in to Google → step 2 unlock encryption (your phone's screen lock).
 
-How reliable re-finding is: trackers like the E96 deliberately hide who they are. They change their
-Bluetooth address and ID about every 15 minutes, so nothing in the signal permanently identifies
-*your* tracker. The app remembers the last address it heard (exact match while it hasn't rotated)
-plus the tracker's type. After a rotation it picks the strongest tracker of the same type, and warns
-you when look-alikes are in range. Several favorites of the same model can't be told apart reliably.
+Requirements: Android 8.0+ on 64-bit ARM (arm64-v8a). Each APK is signed with the same debug key, so
+new versions install over old ones and keep data.
 
-## Finding aids
-- **Beep and vibrate:** both speed up as you get closer. Turn either on in the finder or the More tab.
-- **Direction mode:** in the finder, switch to "Direction". Hold the phone flat against your chest and
-  turn slowly in a full circle. Your body blocks Bluetooth, so the signal is strongest when you face the
-  tracker. The dial records each direction and tells you to turn left or right. Do a new sweep every
-  few meters.
+## Build (for developers)
 
-## Left-behind alerts
-In Favorites, open a tracker's menu and pick "Alert me if left behind". The app then watches in the
-background (with a permanent notification, which Android requires) and alerts you when that
-tracker hasn't been heard for 2 minutes after being near you. Limits: it can't tell your tracker from
-a look-alike nearby, it uses some extra battery, and it doesn't restart by itself after a phone reboot
-until you open the app once.
+Needs JDK 17, the Android SDK (platform 35, build-tools 34+), and **Python 3.13 on PATH** (Chaquopy
+uses it at build time to compile the Find Hub engine and download its packages from PyPI).
 
-## Widget
-Long-press the home screen → Widgets → Tracker Finder. It lists up to four favorites as "In range" or
-"Last heard …"; tap one to open its finder. Android refreshes widgets on its own schedule, so it's
-most current while the app or the left-behind monitor is running.
+```bash
+echo "sdk.dir=/path/to/android/sdk" > local.properties
+./gradlew assembleRelease          # → app/build/outputs/apk/release/app-release.apk (R8-shrunk, ~29 MB)
+./gradlew assembleDebug            # → app/build/outputs/apk/debug/app-debug.apk (~37 MB)
+./gradlew testDebugUnitTest        # JVM unit tests (signal maths, trips, stays, quiet hours…)
+./gradlew lintDebug                # Android lint; must report 0 errors
+```
 
-## Find Hub map (from Tag Tracker Open)
-The **Map** tab connects to Google's Find Hub network, so you can see your tags from anywhere:
-- Live location of each tag on an OpenStreetMap map, **Locate** now, and **Ring** the tag.
-- Saved location history with date ranges (today, 2/7/30/90 days, 1 year, custom), the path on the
-  map, a trip **replay**, and stats (distance, time span, locations, average speed).
-- **Background checks** every 10 minutes (adjustable). Android may delay them while the phone is idle.
-- **Movement alerts** (moved more than 150 m) and per-tag **area alerts** (left / came back to a circle).
-- **CSV and GPX export**, **Google Drive backup** (plus a backup-file alternative and restore).
-- **Nearby** button: links the tag to one of your favorites and opens the signal finder.
+Network hosts the build needs: Google Maven (`dl.google.com`, `maven.google.com`), Maven Central,
+`chaquo.com` (Chaquopy's Python packages), `pypi.org` / `files.pythonhosted.org`.
 
-Setup is two one-time steps on Google's own pages in the app: sign in, then unlock encryption with
-your phone's screen lock. This uses an unofficial client (GoogleFindMyTools); it can break if Google
-changes things and may be against Google's terms, so a secondary account is safer. Tokens and history
-stay on the phone (`files/findhub`), excluded from Android backups.
+## Architecture (short)
 
-### License
-The Find Hub engine comes from Tag Tracker Open (a fork of Shekh-Muhsen's Tag Tracker) and
-GoogleFindMyTools by Leon Böttger, both GPL-3.0, so this app as a whole is GPL-3.0. License texts:
-`third_party/TagTrackerOpen-LICENSE.txt` and `third_party/GoogleFindMyTools/LICENSE`. Python sources are in
-`app/src/main/python` and `third_party/GoogleFindMyTools`.
+```
+Kotlin / Jetpack Compose UI (MainActivity + ui/*)
+ ├─ ScanViewModel ── Android BLE scanner ── Advert / ScanParsing / Signal (smoothing, zones)
+ │    └─ Favorites, Presence, FindPhone, BeaconBattery (battery from adverts)
+ ├─ MonitorService (foreground, filtered scans): left-behind alerts + Find my phone
+ ├─ HubViewModel ── FindHub.kt ──(Chaquopy, one thread)── Python engine
+ │                                      tagapp.py → server/{finder,poller,db,drive_sync}.py
+ │                                                → third_party/GoogleFindMyTools (Google APIs, crypto)
+ ├─ PollWorker (WorkManager, self-rescheduling) → checks, alerts, backups, widget refresh
+ └─ Widgets (FavoritesWidget, TagWidget), FindTileService, receivers (Ring, StopAlarm)
+```
 
-## Theme
-More → Appearance: System, Light or Dark.
+Data stays on the phone: SQLite history and Google tokens in `files/findhub/` (excluded from Android
+backup), settings in SharedPreferences. More detail in [`AGENTS.md`](AGENTS.md).
 
-## Build and install
-1. Install Android Studio (Ladybug 2024.2 or newer).
-2. File → Open → select this `TrackerFinder` folder. Let Gradle sync (it downloads what it needs).
-3. On your phone: Settings → About phone → tap "Build number" 7 times, then enable
-   Developer options → USB debugging. Plug the phone in and accept the prompt.
-4. Press Run ▶ in Android Studio. Or from a terminal: `./gradlew installDebug`.
-5. To get an APK file instead: Build → Build App Bundle(s)/APK(s) → Build APK(s). The file lands in
-   `app/build/outputs/apk/debug/app-debug.apk`; copy it to the phone and open it.
+## Known limitations and untested areas
 
-Requires Android 8.0+ with Bluetooth LE, on a 64-bit ARM phone (almost all current phones). Building needs Python 3.13 on your PATH for the Find Hub engine. On first launch, allow "Nearby devices" and "Location".
-If nothing shows up, turn on Location in quick settings.
+- **Not device-tested by the developer.** Everything was built and unit-tested in a container.
+- **Find my phone** depends on the tracker sending a new kind of Bluetooth signal when its button is
+  pressed. Many Find Hub tags (possibly the E96) don't; the app says so during learning.
+- **Tag battery** decoding follows the FMDN spec as understood (hashed-flags byte, bits 5-6) and was
+  only verified against synthetic data. It needs one Locate/check on v4.5+ to store the tag key.
+- **Distance** is an estimate; walls, bodies and pockets change RSSI a lot. Trend is more reliable.
+- **Bluetooth identity:** trackers rotate their address/ID every ~15 min, so two trackers of the same
+  model can't be told apart reliably; the finder warns about look-alikes.
+- **Find Hub access is unofficial** (GoogleFindMyTools). Google can change or block it, and using it
+  may go against Google's terms. A secondary Google account is safer.
+- Background checks can be delayed by Android Doze; "Unrestricted battery" in More helps.
+- Left-behind monitor doesn't restart after a reboot until the app is opened once.
+- arm64 only (the Python native libraries are built for arm64-v8a only, to save space).
 
-## How to find your E96 in the list
-Hold the phone right next to the tracker. Its entry should be at the top with the strongest signal
-(around -40 to -55 dBm). Press the tracker's button if it doesn't appear.
+## Licence and credits
 
-## Limits
-- Distance is an estimate. Walls, bodies, pockets and phone models change the signal a lot, so the
-  warmer/colder trend is more reliable than the meters number.
-- The app only listens. It cannot make the tracker ring; use the Find Hub app for that.
-- Scanning runs only while the app is open (the screen stays on).
+GPL-3.0 (see [`LICENSE`](LICENSE)), because the app includes GPL-3.0 code:
+- **Tag Tracker Open** (a modified fork of Shekh-Muhsen's Tag Tracker) - server code in
+  `app/src/main/python/server/` and `tagapp.py`. Licence: `third_party/TagTrackerOpen-LICENSE.txt`,
+  notes: `third_party/TagTrackerOpen-LEGAL.md`.
+- **GoogleFindMyTools** by Leon Böttger - `third_party/GoogleFindMyTools/` (own LICENSE inside).
+- Map data © OpenStreetMap contributors; optional Esri World Street Map tiles © Esri.
+
+Not affiliated with Google or Hoco. For finding your own belongings only; tracking people without
+consent is illegal in many places.
