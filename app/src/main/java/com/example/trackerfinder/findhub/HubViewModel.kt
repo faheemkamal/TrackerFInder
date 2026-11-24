@@ -56,7 +56,8 @@ data class HubUi(
 
 class HubViewModel(app: Application) : AndroidViewModel(app) {
     private val ctx get() = getApplication<Application>()
-    private val _ui = MutableStateFlow(HubUi())
+    // History view choices (path/heatmap, individual points) are remembered between app launches.
+    private val _ui = MutableStateFlow(HubUi(showPoints = HubSettings.showPoints(app), showHeat = HubSettings.showHeat(app)))
     val ui: StateFlow<HubUi> = _ui.asStateFlow()
     private var replayJob: Job? = null
 
@@ -108,8 +109,14 @@ class HubViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    fun toggleShowPoints() = _ui.update { it.copy(showPoints = !it.showPoints) }
-    fun setHeat(on: Boolean) = _ui.update { it.copy(showHeat = on) }
+    fun toggleShowPoints() {
+        _ui.update { it.copy(showPoints = !it.showPoints) }
+        HubSettings.setShowPoints(ctx, _ui.value.showPoints)
+    }
+    fun setHeat(on: Boolean) {
+        _ui.update { it.copy(showHeat = on) }
+        HubSettings.setShowHeat(ctx, on)
+    }
 
     fun setInterval(min: Int) {
         HubSettings.setInterval(ctx, min)

@@ -93,7 +93,7 @@ fun MoreScreen(
                     selected = mapProvider == p,
                     onClick = { MapTiles.set(ctx, p) },
                     shape = SegmentedButtonDefaults.itemShape(i, MapProvider.entries.size),
-                ) { Text(p.label) }
+                ) { Text(p.label, maxLines = 1) }
             }
         }
         Text(mapProvider.note, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(start = 4.dp, top = 4.dp))
@@ -229,7 +229,7 @@ fun MoreScreen(
         }
         Spacer(Modifier.height(24.dp))
         Text(
-            "Tracker Finder 4.5",
+            "Tracker Finder 4.6",
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),

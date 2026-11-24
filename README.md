@@ -9,7 +9,7 @@ person's personal use. It does two jobs:
    with an unofficial client and shows the tag's reported locations on a map, keeps a history, and
    sends alerts. This part comes from [Tag Tracker Open](#licence-and-credits) and GoogleFindMyTools.
 
-> Current version: **4.5** (versionCode 12). Ready-to-install APK: [`releases/TrackerFinder-4.5.apk`](releases/TrackerFinder-4.5.apk).
+> Current version: **4.6** (versionCode 13). Ready-to-install APK: [`releases/TrackerFinder-4.6.apk`](releases/TrackerFinder-4.6.apk).
 > Full step-by-step story and design decisions: [`docs/HISTORY.md`](docs/HISTORY.md).
 > Notes for AI agents and new developers: [`AGENTS.md`](AGENTS.md).
 
@@ -71,9 +71,11 @@ reports back. See [Known limitations](#known-limitations-and-untested-areas).
     **History**, **Share** (Google Maps link); plus **Park & guard**.
   - Menu: Rename, Set/Change area alert (circle of 100 m to 3 km around the tag, or move it to the
     current spot, or remove it), Check all tags now, Refresh tag list from Google, Open Google Find Hub.
-- Map drawing: round pins with the tag's initial (selected one larger), accuracy circle, soft pulse
-  under the selected tag, area-alert circle, your phone as a small phone icon with an accuracy circle
-  and a compass cone, camera flies to the tag you pick.
+- Map drawing (MapLibre): each tag is a small tracker-tag pin (rounded fob with a keyring hole, in
+  the theme colour; the selected one is larger and on top), accuracy circle, soft pulse rings under the
+  selected tag, area-alert circle, your phone as a blue pointer arrow that turns with the compass, with
+  an accuracy circle; camera flies to the tag you pick. Tap a pin for its name and last-seen time.
+  A small credit line for the map source is always shown (tap it to open the source's site).
 - Buttons: go to **my location**, **show all tags**. Busy indicator while Google is being asked.
 - Map refreshes itself from stored data every minute.
 
@@ -82,7 +84,8 @@ reports back. See [Known limitations](#known-limitations-and-untested-areas).
   last check and its result, next check time, total stored locations, checks today, recent check
   times, average check duration, **Check now**.
 - Range chips: Today, 24 h, 2 days, 7 days, 30 days, 90 days, 1 year, Custom (date-range picker).
-- **Path / Heatmap** switch, and **Show individual points** (dots with time and accuracy).
+- **Path / Heatmap** switch, and **Show individual points** (dots; tap one for its time and accuracy).
+  Both choices are remembered between launches.
 - Map of the range with the path; **Replay** (play/pause and a slider) with the time of each point.
 - Trip stats: distance, time span, number of locations, average speed (ignores GPS jitter under 40 m).
 - **Places visited** timeline: every stop of 10+ minutes with address, from-to time, duration and
@@ -100,7 +103,9 @@ reports back. See [Known limitations](#known-limitations-and-untested-areas).
 
 ### 7. More tab (settings)
 - **Appearance:** System, Light or Dark (Material You colours on Android 12+).
-- **Map:** OpenStreetMap or Esri tiles (Esri as a backup if OSM is slow or blocked).
+- **Map:** OpenFreeMap (default; clean vector map with a real dark version), OpenStreetMap (classic
+  look, colours inverted in dark mode) or Esri (backup). The choice is saved and used every time the
+  app opens; the map switches between light and dark with the app theme.
 - **Privacy - App lock:** set, change or turn off a password with an optional hint; asked on open and
   after a minute in the background; app hidden from the recent-apps preview while on.
 - **Find my phone:** learn your tracker's button, on/off, Test ring, Forget.
@@ -153,13 +158,13 @@ reports back. See [Known limitations](#known-limitations-and-untested-areas).
 - Everything is stored on the phone (SQLite history, settings); excluded from Android cloud backup.
 - Google tokens and the tag key file never leave the phone except to Google (Find Hub, and Drive if
   you turn backup on). Addresses come from the phone's geocoder (usually Google). Map tiles come from
-  OpenStreetMap or Esri. No ads, no analytics, no server of our own.
+  OpenFreeMap, OpenStreetMap or Esri (whichever you pick). No ads, no analytics, no server of our own.
 
 ---
 
 ## Install (for the user)
 
-1. On the phone, download [`releases/TrackerFinder-4.5.apk`](releases/TrackerFinder-4.5.apk) and open it.
+1. On the phone, download [`releases/TrackerFinder-4.6.apk`](releases/TrackerFinder-4.6.apk) and open it.
    Allow "install unknown apps" for your browser/files app if asked.
 2. Allow "Nearby devices" and "Location" when the app asks. Notifications are needed for alerts.
 3. For the map: Map tab → step 1 sign in to Google → step 2 unlock encryption (your phone's screen lock).
@@ -223,7 +228,9 @@ GPL-3.0 (see [`LICENSE`](LICENSE)), because the app includes GPL-3.0 code:
   `app/src/main/python/server/` and `tagapp.py`. Licence: `third_party/TagTrackerOpen-LICENSE.txt`,
   notes: `third_party/TagTrackerOpen-LEGAL.md`.
 - **GoogleFindMyTools** by Leon Böttger - `third_party/GoogleFindMyTools/` (own LICENSE inside).
-- Map data © OpenStreetMap contributors; optional Esri World Street Map tiles © Esri.
+- Map data © OpenStreetMap contributors. Default map tiles and styles from
+  [OpenFreeMap](https://openfreemap.org) (© OpenMapTiles); optional Esri tiles © Esri.
+- Map engine: [MapLibre Native for Android](https://github.com/maplibre/maplibre-native) (BSD-2-Clause).
 
 Not affiliated with Google or Hoco. For finding your own belongings only; tracking people without
 consent is illegal in many places.

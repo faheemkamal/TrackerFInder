@@ -68,7 +68,7 @@ class TagWidget : AppWidgetProvider() {
                     val addr = Addresses.lookup(ctx, lat, lon)
                     val ago = if (tag.has("ts")) "seen " + agoText(tag.getLong("ts") * 1000) else ""
                     views.setTextViewText(R.id.tag_info, listOfNotNull(addr, ago.ifBlank { null }).joinToString(" · "))
-                    runCatching { mapImage(ctx, lat, lon, tag.optString("name", "T")) }.getOrNull()?.let { views.setImageViewBitmap(R.id.tag_map, it) }
+                    runCatching { mapImage(ctx, lat, lon) }.getOrNull()?.let { views.setImageViewBitmap(R.id.tag_map, it) }
                 } else views.setTextViewText(R.id.tag_info, "No location yet")
             }
             views.setOnClickPendingIntent(R.id.tag_root, PendingIntent.getActivity(ctx, 300, open, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT))
@@ -85,7 +85,7 @@ class TagWidget : AppWidgetProvider() {
         }
 
         /** 320×200 map centred on the tag, stitched from at most 4 cached OpenStreetMap tiles. */
-        private suspend fun mapImage(ctx: Context, lat: Double, lon: Double, name: String): Bitmap = withContext(Dispatchers.IO) {
+        private suspend fun mapImage(ctx: Context, lat: Double, lon: Double): Bitmap = withContext(Dispatchers.IO) {
             val n = (1 shl ZOOM).toDouble()
             val px = (lon + 180) / 360 * n * 256
             val latR = lat * PI / 180
@@ -100,10 +100,10 @@ class TagWidget : AppWidgetProvider() {
                     tile(ctx, tx, ty)?.let { c.drawBitmap(it, (tx * 256 - left).toFloat(), (ty * 256 - top).toFloat(), null) }
                 }
             }
-            val pin = MapArt.tagPin(ctx, name, 0xFF2E7CF6.toInt(), true).bitmap
+            val pin = MapArt.tagPin(ctx, 0xFF2E7CF6.toInt(), true)
             val scale = 0.8f
             val pw = pin.width * scale; val ph = pin.height * scale
-            c.drawBitmap(Bitmap.createScaledBitmap(pin, pw.toInt(), ph.toInt(), true), w / 2f - pw / 2, h / 2f - ph * MapArt.pinAnchorY(ctx, true), Paint(Paint.FILTER_BITMAP_FLAG))
+            c.drawBitmap(Bitmap.createScaledBitmap(pin, pw.toInt(), ph.toInt(), true), w / 2f - pw / 2, h / 2f - ph, Paint(Paint.FILTER_BITMAP_FLAG))
             Paint().apply { textSize = 10f; color = 0xFF555555.toInt(); isAntiAlias = true }.let { c.drawText("© OpenStreetMap", 4f, h - 4f, it) }
             out
         }

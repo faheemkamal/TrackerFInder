@@ -233,6 +233,31 @@ are referenced by name; Python never calls into app classes (checked: no `from j
 6. **Quick Settings tile** (`FindTileService`) and **"Tag on map" widget** (`TagWidget`, stitched from
    up to 4 OSM tiles cached 7 days, updated after each background check via `TagWidgetWorker`).
 
+## 4.6 - OpenFreeMap, saved map choice, new markers
+
+Owner's requests: "Add open free maps. Also if i select a map style, it does not stick. Reverts to
+whatever when i reopen the app", then "instead of the phone icon, can it be a blue pointer arrow. And
+make the tag look like a tag instead of the letter from the tag name".
+
+- **Map engine osmdroid → MapLibre Native (12.3.1).** OpenFreeMap only serves vector tiles, which
+  osmdroid can't draw. 12.3.1 was picked because it is built with Kotlin 2.0.x (13.x needs 2.2) and
+  needs no compileSdk bump. All drawing moved to `ui/TagMap.kt` as GeoJSON sources + layers
+  (fill/line/circle/symbol, native `HeatmapLayer`). APK grew from ~29 MB to ~41 MB (arm64 native lib).
+- **Base maps:** OpenFreeMap "liberty" (light) and "dark" are the new default; OSM and Esri remain as
+  raster styles. The credit line is always shown (OpenFreeMap's attribution requirement).
+- **Map choice not sticking:** the old code read the saved choice once into memory and the osmdroid
+  view always started on OSM before switching; no definite cause was found without a device. Now the
+  choice is stored under a new key `map_style` with `commit()`, read from disk when the activity is
+  created and again whenever a map is created, and the map is built straight from it. Old `map_tiles`
+  values are ignored on purpose so everyone lands on OpenFreeMap once.
+- History's Path/Heatmap and "Show individual points" choices are now saved too (`findhub` prefs).
+- **Markers:** the phone is a blue navigation arrow rotated by the compass (rotation-vector sensor;
+  GPS bearing as a fallback) with an accuracy circle. Tags are a drawn tracker-tag fob with a keyring
+  hole instead of a letter badge. Rotation/tilt gestures are off so the arrow's heading reads as
+  compass north-up. The home-screen widget uses the same tag pin.
+- Not tested on a device: OpenFreeMap tile loading, compass direction, and gestures inside the
+  History list's map card.
+
 ## Repository upload
 
 The owner asked for the project on GitHub with detailed commit messages, the APK, and documentation

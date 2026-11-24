@@ -14,6 +14,11 @@ object HubSettings {
     fun setBackgroundOn(ctx: Context, on: Boolean) = p(ctx).edit().putBoolean("bg", on).apply()
 
     /** Minutes between background checks. */
+    fun showHeat(ctx: Context) = p(ctx).getBoolean("show_heat", false)
+    fun setShowHeat(ctx: Context, on: Boolean) = p(ctx).edit().putBoolean("show_heat", on).apply()
+    fun showPoints(ctx: Context) = p(ctx).getBoolean("show_points", false)
+    fun setShowPoints(ctx: Context, on: Boolean) = p(ctx).edit().putBoolean("show_points", on).apply()
+
     fun interval(ctx: Context) = p(ctx).getInt("interval", 10)
     fun setInterval(ctx: Context, m: Int) = p(ctx).edit().putInt("interval", m).apply()
 

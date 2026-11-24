@@ -13,8 +13,8 @@ android {
         applicationId = "com.example.trackerfinder"
         minSdk = 26
         targetSdk = 35
-        versionCode = 12
-        versionName = "4.5"
+        versionCode = 13
+        versionName = "4.6"
         // The Find Hub engine ships native Python libraries; real phones are 64-bit ARM.
         ndk { abiFilters += listOf("arm64-v8a") }
     }
@@ -68,7 +68,9 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.7")
     implementation("androidx.core:core-ktx:1.15.0")
     implementation("androidx.work:work-runtime-ktx:2.9.1")
-    implementation("org.osmdroid:osmdroid-android:6.1.20")
+    // Map engine: MapLibre (vector + raster tiles). Replaced osmdroid in 4.6 so OpenFreeMap vector maps work.
+    implementation("org.maplibre.gl:android-sdk:12.3.1")
+    implementation("com.squareup.okhttp3:okhttp:4.12.0") // same version MapLibre uses; for the tile User-Agent
 
     testImplementation("junit:junit:4.13.2")
 }

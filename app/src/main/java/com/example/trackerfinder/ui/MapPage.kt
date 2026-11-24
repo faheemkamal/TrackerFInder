@@ -31,6 +31,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -80,9 +83,7 @@ import com.example.trackerfinder.findhub.HubDevice
 import com.example.trackerfinder.findhub.HubUi
 import com.example.trackerfinder.findhub.HubViewModel
 import kotlinx.coroutines.launch
-import org.osmdroid.util.BoundingBox
-import org.osmdroid.util.GeoPoint
-import org.osmdroid.views.MapView
+import org.maplibre.android.geometry.LatLng
 import java.util.Locale
 
 /** Our own "you are here" blue. */
@@ -104,23 +105,18 @@ internal fun MapPage(
     val scope = rememberCoroutineScope()
     val sheet = rememberBottomSheetScaffoldState()
     var detail by rememberSaveable { mutableStateOf(ui.devices.size == 1) }
-    var mapView by remember { mutableStateOf<MapView?>(null) }
-    var meOverlay by remember { mutableStateOf<MeOverlay?>(null) }
-    var meAt by remember { mutableStateOf<GeoPoint?>(null) }
+    var mapHandle by remember { mutableStateOf<MapHandle?>(null) }
+    var meAt by remember { mutableStateOf<LatLng?>(null) }
     val dev = ui.selected
     // Stable callbacks, so a GPS fix doesn't rebuild every map overlay.
-    val onMe = remember { { p: GeoPoint -> meAt = p } }
-    val onMap2 = remember { { m: MapView, me: MeOverlay? -> mapView = m; meOverlay = me } }
+    val onMe = remember { { p: LatLng -> meAt = p } }
+    val onReady = remember { { h: MapHandle -> mapHandle = h } }
     if (detail && ui.devices.size > 1) BackHandler { detail = false }
 
-    fun flyTo(p: GeoPoint, zoom: Double = 16.5) = mapView?.controller?.animateTo(p, zoom, 900L)
+    fun flyTo(p: LatLng, zoom: Double = 15.5) = mapHandle?.flyTo(p.latitude, p.longitude, zoom)
     fun fitAll() {
-        val m = mapView ?: return
-        val pts = ui.devices.mapNotNull { d -> d.lastLat?.let { GeoPoint(it, d.lastLon!!) } } + listOfNotNull(meAt)
-        when {
-            pts.size >= 2 -> m.zoomToBoundingBox(BoundingBox.fromGeoPointsSafe(pts).increaseByScale(1.5f), true, 96)
-            pts.size == 1 -> flyTo(pts[0], 15.0)
-        }
+        val pts = ui.devices.mapNotNull { d -> d.lastLat?.let { LatLng(it, d.lastLon!!) } } + listOfNotNull(meAt)
+        mapHandle?.fit(pts, paddingDp = 72)
     }
 
     BottomSheetScaffold(
@@ -153,7 +149,7 @@ internal fun MapPage(
                     DeviceList(ui, meAt, onCheckAll = hub::checkAllNow, onMenu = onMenu, menuContent = menuContent) { d ->
                         hub.select(d.id)
                         detail = true
-                        d.lastLat?.let { flyTo(GeoPoint(it, d.lastLon!!)) }
+                        d.lastLat?.let { flyTo(LatLng(it, d.lastLon!!)) }
                         scope.launch { runCatching { sheet.bottomSheetState.partialExpand() } }
                     }
                 }
@@ -161,12 +157,15 @@ internal fun MapPage(
         },
     ) {
         Box(Modifier.fillMaxSize()) {
-            OsmMap(
+            TagMap(
                 ui, fence, Modifier.fillMaxSize(),
                 main = true,
                 showMe = true,
                 onMe = onMe,
-                onMap2 = onMap2,
+                onReady = onReady,
+                // Credit line sits just under the "Find Hub" pill, clear of the sheet.
+                creditAlignment = Alignment.TopStart,
+                creditPadding = PaddingValues(start = 14.dp, top = androidx.compose.foundation.layout.WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 68.dp),
             )
             Column(
                 Modifier.align(Alignment.TopEnd).statusBarsPadding().padding(12.dp),
@@ -174,8 +173,8 @@ internal fun MapPage(
             ) {
                 SmallFloatingActionButton(
                     onClick = {
-                        val p = meOverlay?.myLocation ?: meAt
-                        if (p != null) flyTo(p, 17.0) else hub.toast("Waiting for your location… make sure Location is on.")
+                        val p = mapHandle?.me ?: meAt
+                        if (p != null) flyTo(p, 16.0) else hub.toast("Waiting for your location… make sure Location is on.")
                     },
                     containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
                 ) { MyLocationGlyph(MeBlue) }
@@ -205,7 +204,7 @@ internal fun MapPage(
 @Composable
 private fun DeviceList(
     ui: HubUi,
-    meAt: GeoPoint?,
+    meAt: LatLng?,
     onCheckAll: () -> Unit,
     onMenu: () -> Unit,
     menuContent: @Composable () -> Unit,
@@ -247,7 +246,7 @@ private fun DeviceDetail(
     ui: HubUi,
     dev: HubDevice,
     fence: Geofence?,
-    meAt: GeoPoint?,
+    meAt: LatLng?,
     canGoBack: Boolean,
     onBack: () -> Unit,
     onMenu: () -> Unit,
@@ -312,7 +311,7 @@ private fun DeviceDetail(
     }
 }
 
-private fun seenLine(d: HubDevice, meAt: GeoPoint?): String {
+private fun seenLine(d: HubDevice, meAt: LatLng?): String {
     if (d.lastTs == null) return "No location yet"
     val away = if (meAt != null && d.lastLat != null) " · " + formatKm(Geo.distanceM(meAt.latitude, meAt.longitude, d.lastLat, d.lastLon!!)) + " away" else ""
     return "Seen ${formatAgo(d.lastTs * 1000)}$away"

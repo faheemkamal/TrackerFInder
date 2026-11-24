@@ -17,7 +17,6 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.AnimatedContent
 import android.content.Context
 import android.content.Intent
-import android.graphics.Paint
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.horizontalScroll
@@ -102,15 +101,6 @@ import com.example.trackerfinder.findhub.HubSettings
 import com.example.trackerfinder.findhub.HubUi
 import com.example.trackerfinder.findhub.HubViewModel
 import kotlinx.coroutines.launch
-import org.osmdroid.config.Configuration
-import org.osmdroid.views.overlay.CopyrightOverlay
-import org.osmdroid.views.overlay.TilesOverlay
-import org.osmdroid.util.BoundingBox
-import org.osmdroid.util.GeoPoint
-import org.osmdroid.views.MapView
-import org.osmdroid.views.overlay.Marker
-import org.osmdroid.views.overlay.Polygon
-import org.osmdroid.views.overlay.Polyline
 import java.io.File
 import java.text.DateFormat
 import java.util.Date
@@ -392,7 +382,7 @@ private fun HistoryPage(hub: HubViewModel, ui: HubUi, fence: Geofence?, onCustom
         item {
             Card(shape = RoundedCornerShape(24.dp)) {
                 Box(Modifier.fillMaxWidth().height(260.dp)) {
-                    OsmMap(ui, fence, Modifier.fillMaxSize())
+                    TagMap(ui, fence, Modifier.fillMaxSize())
                     BusyPill(ui.busy, Modifier.align(Alignment.TopCenter))
                 }
             }
@@ -583,171 +573,6 @@ private fun FenceDialog(
         },
     )
 }
-
-/** OpenStreetMap view with the tags, the selected tag's path, the replay marker and its area. */
-@Composable
-internal fun OsmMap(
-    ui: HubUi,
-    fence: Geofence?,
-    modifier: Modifier,
-    main: Boolean = false,
-    onMap: (MapView) -> Unit = {},
-    onMe: (GeoPoint) -> Unit = {},
-    showMe: Boolean = false,
-    onMap2: (MapView, MeOverlay?) -> Unit = { _, _ -> },
-) {
-    val ctx = LocalContext.current
-    val dark = MaterialTheme.colorScheme.background.luminanceIsDark()
-    val pathColor = MaterialTheme.colorScheme.primary.toArgb()
-    val fenceColor = MaterialTheme.colorScheme.tertiary.toArgb()
-    val otherColor = MaterialTheme.colorScheme.secondary.toArgb()
-    var fittedKey by remember { mutableStateOf("") }
-    val provider by MapTiles.provider.collectAsStateWithLifecycle()
-    val map = remember {
-        Configuration.getInstance().apply {
-            // Tile servers reject anonymous or generic clients; identify the app properly.
-            userAgentValue = MapTiles.USER_AGENT
-            osmdroidBasePath = File(ctx.cacheDir, "osmdroid")
-            osmdroidTileCache = File(ctx.cacheDir, "osmdroid/tiles")
-        }
-        MapView(ctx).apply {
-            setTileSource(MapTiles.osm)
-            setMultiTouchControls(true)
-            isTilesScaledToDpi = true
-            isVerticalMapRepetitionEnabled = false
-            zoomController.setVisibility(org.osmdroid.views.CustomZoomButtonsController.Visibility.NEVER)
-            controller.setZoom(3.0)
-        }
-    }
-    val pulse = remember(pathColor) { PulseOverlay(pathColor) }
-    val meColor = MeBlue.toArgb()
-    val onMeNow by androidx.compose.runtime.rememberUpdatedState(onMe)
-    val me = remember(map, showMe) { if (showMe) MeOverlay(ctx, map, meColor) { onMeNow(it) } else null }
-    LaunchedEffect(map, me) { onMap(map); onMap2(map, me) }
-    val owner = androidx.lifecycle.compose.LocalLifecycleOwner.current
-    DisposableEffect(owner, map) {
-        val obs = androidx.lifecycle.LifecycleEventObserver { _, e ->
-            when (e) {
-                androidx.lifecycle.Lifecycle.Event.ON_RESUME -> { map.onResume(); runCatching { me?.start() } }
-                androidx.lifecycle.Lifecycle.Event.ON_PAUSE -> { me?.stop(); map.onPause() }
-                else -> {}
-            }
-        }
-        owner.lifecycle.addObserver(obs)
-        onDispose { owner.lifecycle.removeObserver(obs); runCatching { me?.stop() } }
-    }
-    AndroidView({ map }, modifier) { m ->
-        val (source, invert) = MapTiles.sourceFor(provider, dark)
-        if (m.tileProvider.tileSource.name() != source.name()) m.setTileSource(source)
-        m.overlayManager.tilesOverlay.setColorFilter(if (invert) TilesOverlay.INVERT_COLORS else null)
-        m.overlays.clear()
-        m.overlays.add(CopyrightOverlay(ctx).apply { setTextColor(if (dark) android.graphics.Color.LTGRAY else android.graphics.Color.DKGRAY) })
-        val geo = if (main) emptyList() else ui.geoHistory
-        if (fence != null) {
-            m.overlays.add(Polygon(m).apply {
-                points = Polygon.pointsAsCircle(GeoPoint(fence.lat, fence.lon), fence.radiusM.toDouble())
-                fillPaint.color = (fenceColor and 0x00FFFFFF) or 0x22000000
-                outlinePaint.color = fenceColor
-                outlinePaint.strokeWidth = 4f
-                setOnClickListener { _, _, _ -> false }
-            })
-        }
-        if (ui.showHeat && !main && geo.isNotEmpty()) {
-            m.overlays.add(HeatOverlay(geo.map { GeoPoint(it.lat!!, it.lon!!) }))
-        } else if (geo.size >= 2) {
-            val upto = (ui.replayIndex ?: (geo.size - 1)).coerceIn(0, geo.size - 1)
-            m.overlays.add(Polyline(m).apply {
-                setPoints(geo.map { GeoPoint(it.lat!!, it.lon!!) })
-                outlinePaint.color = (pathColor and 0x00FFFFFF) or 0x55000000
-                outlinePaint.strokeWidth = 8f
-                outlinePaint.strokeCap = Paint.Cap.ROUND
-            })
-            m.overlays.add(Polyline(m).apply {
-                setPoints(geo.take(upto + 1).map { GeoPoint(it.lat!!, it.lon!!) })
-                outlinePaint.color = pathColor
-                outlinePaint.strokeWidth = 10f
-                outlinePaint.strokeCap = Paint.Cap.ROUND
-            })
-            if (ui.replayIndex != null) {
-                val p = geo[upto]
-                m.overlays.add(Marker(m).apply {
-                    position = GeoPoint(p.lat!!, p.lon!!)
-                    icon = dotDrawable(pathColor).apply { setSize(40, 40); setStroke(6, android.graphics.Color.WHITE) }
-                    title = DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT).format(Date(p.ts * 1000))
-                    setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
-                })
-            }
-        }
-        if (ui.showPoints && !main) {
-            val dot = dotDrawable(pathColor)
-            val fmt = DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT)
-            geo.forEach { p ->
-                m.overlays.add(Marker(m).apply {
-                    position = GeoPoint(p.lat!!, p.lon!!)
-                    icon = dot
-                    setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
-                    title = fmt.format(Date(p.ts * 1000))
-                    snippet = p.accuracy?.let { "±${it.toInt()} m" }
-                })
-            }
-        }
-        val sel = ui.selected
-        if (sel?.lastLat != null) {
-            sel.lastAccuracy?.takeIf { it > 0 }?.let { acc ->
-                m.overlays.add(Polygon(m).apply {
-                    points = Polygon.pointsAsCircle(GeoPoint(sel.lastLat, sel.lastLon!!), acc)
-                    fillPaint.color = (pathColor and 0x00FFFFFF) or 0x1F000000
-                    outlinePaint.color = (pathColor and 0x00FFFFFF) or 0x55000000
-                    outlinePaint.strokeWidth = 2f
-                    setOnClickListener { _, _, _ -> false }
-                })
-            }
-            if (main) {
-                pulse.point = GeoPoint(sel.lastLat, sel.lastLon!!)
-                m.overlays.add(pulse)
-            }
-        }
-        if (me != null) m.overlays.add(me)
-        // Other tags first so the selected pin sits on top.
-        ui.devices.sortedBy { it.id == ui.selectedId }.forEach { d ->
-            val lat = d.lastLat ?: return@forEach
-            val lon = d.lastLon ?: return@forEach
-            val selected = d.id == ui.selectedId
-            m.overlays.add(Marker(m).apply {
-                position = GeoPoint(lat, lon)
-                title = d.name
-                snippet = d.lastTs?.let { "Last seen " + formatAgo(it * 1000) }
-                icon = MapArt.tagPin(ctx, d.name, if (selected) pathColor else otherColor, selected)
-                setAnchor(Marker.ANCHOR_CENTER, MapArt.pinAnchorY(ctx, selected))
-                setInfoWindow(null)
-            })
-        }
-        // Camera: fly to the selected tag on the main map; fit the path on the history map.
-        val key = "${ui.selectedId}|${ui.range}|${ui.customStart}|${geo.size}|${if (main) sel?.lastTs else ""}"
-        if (key != fittedKey) {
-            if (!main && geo.size >= 2) {
-                val box = BoundingBox.fromGeoPointsSafe(geo.map { GeoPoint(it.lat!!, it.lon!!) })
-                m.post { m.zoomToBoundingBox(box.increaseByScale(1.3f), fittedKey.isNotEmpty(), 48) }
-                fittedKey = key
-            } else if (sel?.lastLat != null) {
-                val target = GeoPoint(sel.lastLat, sel.lastLon!!)
-                if (fittedKey.isEmpty()) { m.controller.setZoom(16.5); m.controller.setCenter(target) }
-                else m.controller.animateTo(target, maxOf(m.zoomLevelDouble, 15.5), 900L)
-                fittedKey = key
-            }
-        }
-        m.invalidate()
-    }
-}
-
-private fun dotDrawable(color: Int) = android.graphics.drawable.GradientDrawable().apply {
-    shape = android.graphics.drawable.GradientDrawable.OVAL
-    setColor(color)
-    setStroke(3, android.graphics.Color.WHITE)
-    setSize(22, 22)
-}
-
-private fun androidx.compose.ui.graphics.Color.luminanceIsDark() = (0.299 * red + 0.587 * green + 0.114 * blue) < 0.5
 
 private fun customLabel(ui: HubUi): String {
     val f = DateFormat.getDateInstance(DateFormat.SHORT)
