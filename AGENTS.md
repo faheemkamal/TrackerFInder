@@ -9,8 +9,10 @@ Google Find Hub (FMDN) tag. Two halves:
 - **Find Hub half**: an embedded **Python** engine (GoogleFindMyTools + Tag Tracker Open server code,
   GPL-3.0) run through **Chaquopy**, giving map, history, alerts and backups.
 
-Owner is not a developer: they install the APK and report what they see. **No physical device has
-been used during development**; say so honestly when reporting results.
+Owner is not a developer: they install the APK and report what they see. The developer (an AI agent) has no device: everything is built in the cloud and tested by the owner
+on their own phone. **On 2026-11-24 the owner confirmed 4.7.2 works on their phone** (map with
+OpenFreeMap, saved map choice, arrow, glow dots, heatmap). Say honestly what has and hasn't been
+checked on a device when reporting results.
 
 ## Build, test, lint
 ```bash

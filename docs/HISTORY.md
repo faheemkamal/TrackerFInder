@@ -279,7 +279,7 @@ page reopened straight into the heatmap, which explains the second crash.
 Fix: the heatmap is now two blurred circle layers (orange glow + smaller red core), whose opacity
 scales with the number of reports so busy places pile up into a hot spot. This looks close to the old
 osmdroid heatmap. All map data updates and the style-load callback are wrapped in try/catch, so a
-Kotlin-side map error is logged and the map just stays as it was. Not verified on the device yet.
+Kotlin-side map error is logged and the map just stays as it was. Confirmed fixed by the owner on 4.7.2.
 
 ## 4.7.2 - Smaller glow dot, arrow on top
 
@@ -287,6 +287,11 @@ The owner: "the glow dot is too big. it hides the arrow when together". The dot 
 radius to 9/7.5 dp (selected/other), with a thinner white border and shadow. The halo rings now grow
 from 8 to 21 px instead of 14 to 36. The "me" symbol layer is now added after "pins", so your blue
 arrow is always drawn above the tag dots.
+
+**Verified (2026-11-24):** the owner installed 4.7.2 and reported "Everything working fine now":
+OpenFreeMap map in light/dark, the saved map choice, the blue arrow, the glow dots and the heatmap all
+work on their phone. Why the APK is bigger since 4.6 (~29 MB to ~41 MB): MapLibre ships a native
+rendering library (arm64 only, as the build filters ABIs for Chaquopy) plus its Java/Kotlin layer.
 
 ## Repository upload
 
