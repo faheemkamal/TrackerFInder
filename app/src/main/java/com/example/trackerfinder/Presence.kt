@@ -8,7 +8,7 @@ import android.content.Context
  */
 object Presence {
     private const val PREFS = "presence"
-    private const val WRITE_EVERY_MS = 10_000L
+    private const val WRITE_EVERY_MS = 30_000L
     private val lastWrite = HashMap<String, Long>()
 
     /** "In range" if heard within this window. */

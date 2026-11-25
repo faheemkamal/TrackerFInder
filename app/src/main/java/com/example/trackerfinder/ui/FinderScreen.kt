@@ -83,7 +83,7 @@ fun FinderScreen(vm: ScanViewModel, t: TrackState) {
 
     // Re-read the clock twice a second so the "lost" state updates even without new adverts.
     var now by remember { mutableLongStateOf(SystemClock.elapsedRealtime()) }
-    LaunchedEffect(Unit) { while (true) { delay(500); now = SystemClock.elapsedRealtime() } }
+    WhileOnScreen { while (true) { delay(500); now = SystemClock.elapsedRealtime() } }
 
     val lostFor = now - t.lastSeen
     val lost = !t.searching && lostFor > ScanViewModel.lostAfter(t.kind)

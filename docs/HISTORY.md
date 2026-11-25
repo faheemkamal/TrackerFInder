@@ -445,6 +445,26 @@ MapLibre asked for deeper tiles and got Esri's placeholder images. The dark sour
 World_Dark_Gray_Reference label layer is drawn on top so street and place names show. `raster()` takes
 `maxZoom` and an optional `labels` URL. Not checked on a phone (the build environment can't reach Esri).
 
+## 5.8: background battery audit
+The owner reported heavy background battery use. Causes found and fixed:
+- **Refresh loops kept running in the background.** Home and the Map/History screen re-read the Find
+  Hub engine (Python + SQLite) every 60 s in a plain `LaunchedEffect`, which keeps going while the
+  app sits in recents; same for the finder's 500 ms clock and the map's 30 s breadcrumb reload. New
+  `WhileOnScreen` (Components.kt, `repeatOnLifecycle(STARTED)`) pauses them when the app is left.
+- **Left-behind monitor woke the phone constantly.** BALANCED scan with filters that also match
+  nearby phones and earbuds (Fast Pair / FMDN service data) delivered every advert. Now LOW_POWER
+  with 10 s hardware batching (`setReportDelay`, when supported); BALANCED unbatched only when Find my
+  phone is on (needs a quick reaction). Tick 15 s -> 30 s.
+- **Widget redrawn every 15 s** by the monitor tick, and on every presence write: now only when a
+  favorite goes in or out of range. Presence writes every 30 s (was 10 s); breadcrumb location
+  look-ups at most once a minute per favorite.
+- **Find Hub checks while the tag is with you.** Each check starts the engine and holds the network
+  for up to ~90 s per tag. Scheduled checks are now skipped when every tag's linked favorite (or the
+  single tag/single Bluetooth favorite) was heard over Bluetooth in the last 2 min, for at most an
+  hour in a row (`last_real_check` in prefs `findhub`); the check log says "skipped, your tag is with you".
+- Checked and fine: Wi-Fi stops in `onStop`/only on Wi-Fi screens, GPS (`MeTracker`) only while a map
+  shows you, map animations use the frame clock (paused off screen), no wakelocks or alarms.
+
 ## Repository upload
 
 The owner asked for the project on GitHub with detailed commit messages, the APK, and documentation

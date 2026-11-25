@@ -73,8 +73,9 @@ fun HomeScreen(
     val devices by vm.devices.collectAsStateWithLifecycle()
     val rssiAt1m by vm.rssiAt1m.collectAsStateWithLifecycle()
     val connected = ui.account?.connected == true
-    LaunchedEffect(connected) {
-        if (!connected) return@LaunchedEffect
+    // Only while Home is on screen: this reads the Find Hub engine, which costs battery in the background.
+    WhileOnScreen(connected) {
+        if (!connected) return@WhileOnScreen
         hub.loadCheckInfo()
         while (true) { delay(60_000); hub.refreshQuiet() }
     }

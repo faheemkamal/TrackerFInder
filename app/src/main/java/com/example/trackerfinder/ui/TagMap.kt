@@ -317,9 +317,9 @@ internal fun TagMap(
 
     // Bluetooth breadcrumbs (main map): where the phone last heard each favorite tag over Bluetooth.
     // Read from prefs now and every 30 s while the map is open; recorded by Breadcrumbs.record.
-    LaunchedEffect(style, main) {
-        val s = style ?: return@LaunchedEffect
-        if (!main) return@LaunchedEffect
+    WhileOnScreen(style, main) {
+        val s = style ?: return@WhileOnScreen
+        if (!main) return@WhileOnScreen
         while (true) {
             try {
                 val favs = com.example.trackerfinder.FavoritesStore.load(ctx.getSharedPreferences(com.example.trackerfinder.ScanViewModel.PREFS, Context.MODE_PRIVATE))

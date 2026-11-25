@@ -213,7 +213,7 @@ private fun HubContent(hub: HubViewModel, ui: HubUi, openFindHub: () -> Unit, fi
     var fenceVersion by remember { mutableIntStateOf(0) }
     val fence = remember(dev?.id, fenceVersion) { dev?.let { HubSettings.geofence(ctx, it.id) } }
     // Keep the screen fresh while it's open: re-read stored data every minute (no network call).
-    LaunchedEffect(Unit) { while (true) { delay(60_000); hub.refreshQuiet() } }
+    WhileOnScreen { while (true) { delay(60_000); hub.refreshQuiet() } }
 
     AnimatedContent(
         targetState = page,

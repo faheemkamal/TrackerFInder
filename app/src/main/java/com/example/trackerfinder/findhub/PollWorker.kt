@@ -28,7 +28,15 @@ class PollWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker(ctx, 
                 HubSettings.recordCheck(ctx, "Google account not connected")
                 return Result.success()
             }
+            if (CHAIN in tags && tagsWithYou(ctx)) {
+                // Battery: each check starts the engine and keeps the network busy for up to a minute
+                // or more. When the phone can hear every tag over Bluetooth right now, the tag is
+                // with you, so skip it (but never for more than an hour in a row).
+                HubSettings.recordCheck(ctx, "skipped, your tag is with you")
+                return Result.success()
+            }
             val added = FindHub.pollAll(ctx)
+            lastRealCheck(ctx, System.currentTimeMillis())
             // The engine reports its own failures in the check log rather than throwing.
             val failed = runCatching { FindHub.checkLog(ctx).firstOrNull()?.ok == false }.getOrDefault(false)
             HubSettings.recordCheck(ctx, if (failed) "Last check failed (no network or Google refused it)" else null)
@@ -63,6 +71,37 @@ class PollWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker(ctx, 
             }
             runCatching { checkGeofences(ctx) }
             backupToFileIfSet(ctx)
+        }
+
+        private const val MAX_SKIP_MS = 60 * 60_000L
+
+        private fun lastRealCheck(ctx: Context, at: Long? = null): Long {
+            val p = ctx.getSharedPreferences("findhub", Context.MODE_PRIVATE)
+            if (at != null) p.edit().putLong("last_real_check", at).apply()
+            return p.getLong("last_real_check", 0)
+        }
+
+        /**
+         * True when every Find Hub tag is known to be next to the phone: its linked favorite (or, with
+         * one tag and one Bluetooth favorite, that favorite) was heard in the last 2 minutes. Only the
+         * app or the left-behind monitor record that, so otherwise checks run as normal.
+         */
+        private fun tagsWithYou(ctx: Context): Boolean {
+            val now = System.currentTimeMillis()
+            if (now - lastRealCheck(ctx) > MAX_SKIP_MS) return false
+            val tags = HubSettings.widgetTags(ctx)
+            val ids = (0 until tags.length()).mapNotNull { tags.optJSONObject(it)?.optString("id")?.takeIf { s -> s.isNotBlank() } }
+            if (ids.isEmpty()) return false
+            val favs = com.example.trackerfinder.FavoritesStore.load(
+                ctx.getSharedPreferences(com.example.trackerfinder.ScanViewModel.PREFS, Context.MODE_PRIVATE),
+            ).filter { it.kind != com.example.trackerfinder.TrackerKind.WIFI }
+            val near = favs.filter { now - com.example.trackerfinder.Presence.lastHeard(ctx, it.id) < com.example.trackerfinder.Presence.IN_RANGE_MS }
+                .map { it.id }.toSet()
+            if (near.isEmpty()) return false
+            return ids.all { id ->
+                val link = HubSettings.linkedFavorite(ctx, id)
+                if (link != null) link in near else ids.size == 1 && favs.size == 1
+            }
         }
 
         private fun constraints() = Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build()

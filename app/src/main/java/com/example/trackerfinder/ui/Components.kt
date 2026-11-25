@@ -1,5 +1,6 @@
 package com.example.trackerfinder.ui
 
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
@@ -189,5 +190,18 @@ fun formatAgo(wallMillis: Long): String {
         s < 3600 -> "${s / 60} min ago"
         s < 86_400 -> "${s / 3600} h ago"
         else -> "${s / 86_400} d ago"
+    }
+}
+
+/**
+ * Like LaunchedEffect, but only runs while the app is on screen: paused when you leave the app,
+ * restarted when you come back. Use it for every repeating refresh loop; a plain LaunchedEffect
+ * loop keeps running in the background as long as Android keeps the app in memory.
+ */
+@Composable
+fun WhileOnScreen(vararg keys: Any?, block: suspend kotlinx.coroutines.CoroutineScope.() -> Unit) {
+    val owner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+    LaunchedEffect(owner, *keys) {
+        owner.lifecycle.repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.STARTED, block)
     }
 }

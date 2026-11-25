@@ -24,9 +24,16 @@ object Breadcrumbs {
     private const val SAME_SPOT_M = 30f
     private const val MAX_FIX_AGE_MS = 2 * 60_000L
     private const val MAX_ACCURACY_M = 150f
+    /** At most one location look-up per favorite per minute. */
+    private const val EVERY_MS = 60_000L
+    private val lastTry = HashMap<String, Long>()
 
     @SuppressLint("MissingPermission")
     fun record(ctx: Context, favoriteId: String, now: Long = System.currentTimeMillis()) {
+        synchronized(lastTry) {
+            if (now - (lastTry[favoriteId] ?: 0) < EVERY_MS) return
+            lastTry[favoriteId] = now
+        }
         val fix = freshFix(ctx) ?: return
         val list = load(ctx, favoriteId).toMutableList()
         val last = list.lastOrNull()

@@ -42,6 +42,8 @@ class MonitorService : Service() {
     private val alerted = HashSet<String>()
     private var scannedKinds: Set<TrackerKind> = emptySet()
     private var scannedToken: String? = null
+    /** Favorites the widget last showed as in range; the widget is redrawn only when this changes. */
+    private var widgetInRange: Set<String>? = null
     /** Cached list of favorites with alerts on; refreshed every tick. */
     private var watched: List<Favorite> = emptyList()
 
@@ -126,7 +128,16 @@ class MonitorService : Service() {
         stopScan()
         val scanner = (getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager).adapter?.bluetoothLeScanner ?: return
         if (!hasScanPermission()) return
-        val settings = ScanSettings.Builder().setScanMode(ScanSettings.SCAN_MODE_BALANCED).build()
+        // Battery: left-behind alerts only need to notice a tag within ~2 minutes, so listen in
+        // low-power mode and let the Bluetooth chip collect results for 10 s at a time instead of
+        // waking the phone for every signal (nearby phones and earbuds match the filters too).
+        // Find my phone needs a quick reaction to the button press, so it keeps a livelier scan.
+        val adapter = (getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager).adapter
+        val quick = token != null
+        val settings = ScanSettings.Builder()
+            .setScanMode(if (quick) ScanSettings.SCAN_MODE_BALANCED else ScanSettings.SCAN_MODE_LOW_POWER)
+            .apply { if (!quick && adapter?.isOffloadedScanBatchingSupported == true) setReportDelay(BATCH_MS) }
+            .build()
         try {
             val filters = filtersFor(watched) + listOfNotNull(if (token != null) FindPhone.scanFilter(this) else null)
             if (filters.isEmpty()) return
@@ -181,8 +192,9 @@ class MonitorService : Service() {
         var changed = false
         watched.forEach { f ->
             if (f.matches(seen)) {
+                val wasAway = System.currentTimeMillis() - Presence.lastHeard(this, f.id) > Presence.IN_RANGE_MS
                 if (Presence.heard(this, f.id)) {
-                    changed = true
+                    changed = changed || wasAway // redraw the widget only when it comes back in range
                     Breadcrumbs.record(this, f.id)
                 }
                 armed += f.id
@@ -217,7 +229,9 @@ class MonitorService : Service() {
                 nm.notify(alertId(f.id), leftBehindNotification(f, last))
             }
         }
-        FavoritesWidget.updateAll(this)
+        // Redraw the widget only when a favorite went in or out of range (it was every 15 s).
+        val inRange = watched.filter { now - Presence.lastHeard(this, it.id) < Presence.IN_RANGE_MS }.map { it.id }.toSet()
+        if (inRange != widgetInRange) { widgetInRange = inRange; FavoritesWidget.updateAll(this) }
     }
 
     private fun openAppIntent(favoriteId: String?, requestCode: Int): PendingIntent {
@@ -263,7 +277,8 @@ class MonitorService : Service() {
         /** "Alerts paused after restart, tap to resume" (outside the other ranges). */
         private const val PAUSED_ID = 99_000
         private const val EXTRA_FROM_BOOT = "from_boot"
-        private const val TICK_MS = 15_000L
+        private const val TICK_MS = 30_000L
+        private const val BATCH_MS = 10_000L
         /** How long a favorite must be silent before we call it "left behind". */
         const val LEFT_BEHIND_MS = 2 * 60_000L
 
