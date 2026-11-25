@@ -86,12 +86,18 @@ object MapTiles {
         MapProvider.ESRI -> "https://www.esri.com"
     }
 
+    /** Called once a style has loaded, before our layers go on top. */
+    fun styleLoaded(s: Style, p: MapProvider, dark: Boolean) {
+        if (dark && p == MapProvider.OPENFREEMAP) NightMap.apply(s)
+    }
+
     /** OSM asks apps not to pre-fetch tiles that aren't on screen. */
     fun allowPrefetch(p: MapProvider) = p != MapProvider.OSM
 
     fun style(p: MapProvider, dark: Boolean): Style.Builder = when (p) {
         MapProvider.OPENFREEMAP -> Style.Builder().fromUri(
-            if (dark) "https://tiles.openfreemap.org/styles/dark" else "https://tiles.openfreemap.org/styles/liberty",
+            // Dark mode loads the same detailed "liberty" style and recolours it (see NightMap).
+            "https://tiles.openfreemap.org/styles/liberty",
         )
         MapProvider.OSM -> Style.Builder().fromJson(
             raster("https://tile.openstreetmap.org/{z}/{x}/{y}.png", attribution(p), invert = dark, bg = if (dark) "#1b1b1f" else "#f2efe9"),

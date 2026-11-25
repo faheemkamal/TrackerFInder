@@ -191,6 +191,7 @@ internal fun TagMap(
         style = null
         m.prefetchZoomDelta = if (MapTiles.allowPrefetch(provider)) 4 else 0
         m.setStyle(MapTiles.style(provider, dark)) { s ->
+            MapTiles.styleLoaded(s, provider, dark)
             runCatching { addLayers(s) }.onFailure { android.util.Log.w("TagMap", "addLayers failed", it) }
             style = s
         }

@@ -22,7 +22,7 @@ checked on a device when reporting results.
 ```
 - Lint must have **0 errors** (it fails the build); warnings are tolerated.
 - Bump `versionCode`/`versionName` in `app/build.gradle.kts` **and** the version text at the bottom
-  of `ui/MoreScreen.kt` for every delivered build. Current: 25 / "5.5".
+  of `ui/MoreScreen.kt` for every delivered build. Current: 26 / "5.6".
 - Release is signed with the debug key on purpose so new APKs install over old ones. If you change the
   signing key, the owner must uninstall (and loses local data) - ask first.
 - Robolectric/screenshot tests were not set up (Maven Central throttling in the build environment).
@@ -54,7 +54,7 @@ checked on a device when reporting results.
 | `findhub/BeaconBattery.kt` | Sends FMDN adverts to `beacon.py` once per address. |
 | `ui/HomeScreen.kt`, `ui/MapPage.kt`, `ui/MapScreen.kt` | Home; full-screen map + sheet; setup and History page. |
 | `ui/TagMap.kt` | `TagMap` composable (MapLibre MapView): GeoJSON sources/layers for pins, halo rings, path, heatmap, points, areas, phone arrow; `MapHandle` (flyTo/fit); `MeTracker` (GPS + compass). |
-| `ui/MapOverlays.kt`, `ui/MapTiles.kt` | `MapArt` bitmaps (tag glow dot in `TagCoral`, phone arrow) and `circle()`; base-map styles, saved choice (`settings`/`map_style`), OkHttp UA. |
+| `ui/MapOverlays.kt`, `ui/MapTiles.kt`, `ui/NightMap.kt` | `MapArt` bitmaps (tag glow dot in `TagCoral`, phone arrow) and `circle()`; base-map styles, saved choice (`settings`/`map_style`), OkHttp UA; `NightMap` recolours OpenFreeMap liberty for dark mode (`MapTiles.styleLoaded`). |
 | `ui/AreaAlertEditor.kt` | Full-screen area alert set-up: address search (`Addresses.search`), map tap (`TagMap(onMapTap=)`), tag/my location, radius slider, live circle. |
 | `ui/MoreScreen.kt`, `ui/HubSettingsSection.kt`, `ui/ExtraSettings.kt`, `ui/HelpDialog.kt` | Settings and help. |
 
@@ -80,8 +80,8 @@ Python (`app/src/main/python/`): `tagapp.py` (functions Kotlin calls, return JSO
   commit or upload them. `.gitignore` covers `google_secrets*.json`, keystores and APKs.
 - Don't trim `third_party/GoogleFindMyTools` by guesswork: modules import `example_data_provider`,
   `main`, `chrome_driver` at import time (this broke sign-in step 2 once).
-- Map engine is **MapLibre** (since 4.6; osmdroid before). OpenFreeMap styles are loaded by URL
-  (`tiles.openfreemap.org/styles/liberty` and `/dark`); OSM and Esri are one-layer raster styles built
+- Map engine is **MapLibre** (since 4.6; osmdroid before). OpenFreeMap's `liberty` style is loaded by URL
+  (`tiles.openfreemap.org/styles/liberty`; dark mode recolours it in `NightMap`, not OpenFreeMap's `/dark`); OSM and Esri are one-layer raster styles built
   in `MapTiles.style`. MapLibre zoom = old osmdroid zoom - 1. Its OkHttp client is replaced in
   `MapTiles.applyHttp` to send our User-Agent; OSM needs ≤2 connections and no prefetch
   (`prefetchZoomDelta = 0`). Esri tile URLs are `z/y/x`. CARTO needs an API key now - don't switch back.

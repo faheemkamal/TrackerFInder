@@ -428,6 +428,15 @@ The owner picked two ideas from the 5.4 list and added rules:
   More's count ignore Wi-Fi favorites, Help covers Wi-Fi, the spectrum, breadcrumbs and restart, and
   Privacy now lists OpenFreeMap among the tile sources.
 
+## 5.6: Google-Maps-like dark map
+The owner sent a screenshot of the OpenFreeMap "dark" style (near-black, faint roads) and asked for it
+to look like Google Maps' dark mode. Dark mode now loads the detailed "liberty" style and recolours it
+after load with our own palette in `ui/NightMap.kt` (blue-grey base #1f2633, grey roads getting brighter
+with road class, dark teal water, muted green parks, soft grey labels with dark halos). Layers are
+matched by OpenMapTiles source layer + id keywords, so new/renamed layers still get a dark colour; road
+shields keep their own text colour. No Google assets or colours copied. The build environment can't reach
+tiles.openfreemap.org, so the look was not previewed before release.
+
 ## Repository upload
 
 The owner asked for the project on GitHub with detailed commit messages, the APK, and documentation
