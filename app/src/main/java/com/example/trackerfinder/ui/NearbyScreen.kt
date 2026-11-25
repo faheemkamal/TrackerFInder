@@ -36,6 +36,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.trackerfinder.Proximity
 import com.example.trackerfinder.ScanViewModel
 import com.example.trackerfinder.SeenDevice
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import com.example.trackerfinder.TrackerKind
 import com.example.trackerfinder.realRssi
 import androidx.compose.runtime.mutableIntStateOf
@@ -44,7 +46,8 @@ import androidx.compose.runtime.mutableIntStateOf
 fun NearbyScreen(vm: ScanViewModel, contentPadding: PaddingValues) {
     val devices by vm.devices.collectAsStateWithLifecycle()
     val favorites by vm.favorites.collectAsStateWithLifecycle()
-    // 0 = trackers, 1 = all Bluetooth devices, 2 = Wi-Fi networks
+    val wifiNets by vm.wifiNets.collectAsStateWithLifecycle()
+    // 0 = trackers, 1 = all Bluetooth devices, 2 = Wi-Fi networks, 3 = Wi-Fi spectrum
     var view by rememberSaveable { mutableIntStateOf(0) }
     val trackersOnly = view == 0
     val wifiView = view == 2
@@ -52,7 +55,8 @@ fun NearbyScreen(vm: ScanViewModel, contentPadding: PaddingValues) {
         when (view) {
             0 -> it.kind.isTracker
             1 -> it.kind != TrackerKind.WIFI
-            else -> it.kind == TrackerKind.WIFI
+            2 -> it.kind == TrackerKind.WIFI
+            else -> false
         }
     }.sortedByDescending { it.rssi }
     val favAddresses = favorites.map { it.lastAddress }.toSet()
@@ -74,15 +78,24 @@ fun NearbyScreen(vm: ScanViewModel, contentPadding: PaddingValues) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Spacer(Modifier.height(8.dp))
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            Row(Modifier.horizontalScroll(rememberScrollState()), verticalAlignment = Alignment.CenterVertically) {
                 FilterChip(selected = view == 0, onClick = { view = 0 }, label = { Text("Trackers") })
                 Spacer(Modifier.width(6.dp))
-                FilterChip(selected = view == 1, onClick = { view = 1 }, label = { Text("All") })
+                FilterChip(selected = view == 1, onClick = { view = 1 }, label = { Text("All Bluetooth devices") })
                 Spacer(Modifier.width(6.dp))
                 FilterChip(selected = view == 2, onClick = { view = 2 }, label = { Text("Wi-Fi") })
-                Spacer(Modifier.weight(1f))
-                Text("${shown.size} nearby", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Spacer(Modifier.width(6.dp))
+                FilterChip(selected = view == 3, onClick = { view = 3 }, label = { Text("Wi-Fi spectrum") })
             }
+            Text(
+                if (view == 3) "${wifiNets.size} Wi-Fi networks" else "${shown.size} nearby",
+                style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 4.dp),
+            )
+        }
+        if (view == 3) {
+            item { WifiSpectrum(wifiNets.values.toList(), throttled = vm.wifiThrottled(), wifiOn = vm.wifiOn()) }
+            return@LazyColumn
         }
         if (wifiView) item {
             Text(
@@ -112,13 +125,13 @@ fun NearbyScreen(vm: ScanViewModel, contentPadding: PaddingValues) {
             }
         }
         items(shown, key = { it.address }) { d ->
-            DeviceCard(d, isFavorite = d.address in favAddresses) { vm.select(d) }
+            DeviceCard(d, isFavorite = d.address in favAddresses, channel = wifiNets[d.address]?.let { "ch ${it.channel}" + if (it.widthMhz > 20) " · ${it.widthMhz} MHz" else "" }, band = wifiNets[d.address]?.band) { vm.select(d) }
         }
     }
 }
 
 @Composable
-private fun DeviceCard(d: SeenDevice, isFavorite: Boolean, onClick: () -> Unit) {
+private fun DeviceCard(d: SeenDevice, isFavorite: Boolean, channel: String? = null, band: String? = null, onClick: () -> Unit) {
     val heat = Proximity.heat(d.rssi.toDouble())
     Card(
         onClick = onClick,
@@ -131,10 +144,19 @@ private fun DeviceCard(d: SeenDevice, isFavorite: Boolean, onClick: () -> Unit) 
             leadingContent = {
                 androidx.compose.foundation.Canvas(Modifier.size(12.dp)) { drawCircle(heatColor(heat)) }
             },
-            headlineContent = { Text(d.name ?: d.kind.label, maxLines = 1) },
+            headlineContent = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(d.name ?: d.kind.label, maxLines = 1, modifier = Modifier.weight(1f, fill = false))
+                    if (band != null && band != "?") {
+                        Spacer(Modifier.width(8.dp))
+                        BandBadge(band)
+                    }
+                }
+            },
             supportingContent = {
                 Text(
-                    if (d.name != null) "${d.kind.label} · ${d.address}" else d.address,
+                    if (d.kind == TrackerKind.WIFI) listOfNotNull(channel?.takeIf { it.isNotEmpty() }, d.address).joinToString(" · ")
+                    else if (d.name != null) "${d.kind.label} · ${d.address}" else d.address,
                     style = MaterialTheme.typography.bodySmall, maxLines = 1,
                 )
             },
@@ -150,6 +172,23 @@ private fun DeviceCard(d: SeenDevice, isFavorite: Boolean, onClick: () -> Unit) 
                     }
                 }
             },
+        )
+    }
+}
+
+/** Small coloured pill: 2.4 GHz (amber), 5 GHz (blue), 6 GHz (purple). */
+@Composable
+private fun BandBadge(band: String) {
+    val bg = when (band) {
+        "2.4 GHz" -> androidx.compose.ui.graphics.Color(0xFFFFB300)
+        "5 GHz" -> androidx.compose.ui.graphics.Color(0xFF1E88E5)
+        else -> androidx.compose.ui.graphics.Color(0xFF8E24AA)
+    }
+    androidx.compose.material3.Surface(shape = RoundedCornerShape(50), color = bg) {
+        Text(
+            band, color = androidx.compose.ui.graphics.Color.White,
+            style = MaterialTheme.typography.labelSmall,
+            modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.dp),
         )
     }
 }

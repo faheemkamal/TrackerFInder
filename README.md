@@ -9,7 +9,7 @@ person's personal use. It does two jobs:
    with an unofficial client and shows the tag's reported locations on a map, keeps a history, and
    sends alerts. This part comes from [Tag Tracker Open](#licence-and-credits) and GoogleFindMyTools.
 
-> Current version: **5.1** (versionCode 21); 4.7.2 was confirmed working on the owner's phone. Ready-to-install APK: [`releases/TrackerFinder-5.1.apk`](releases/TrackerFinder-5.0.apk).
+> Current version: **5.2** (versionCode 22); 4.7.2 was confirmed working on the owner's phone. Ready-to-install APK: [`releases/TrackerFinder-5.2.apk`](releases/TrackerFinder-5.0.apk).
 > Full step-by-step story and design decisions: [`docs/HISTORY.md`](docs/HISTORY.md).
 > Notes for AI agents and new developers: [`AGENTS.md`](AGENTS.md).
 
@@ -39,9 +39,16 @@ reports back. See [Known limitations](#known-limitations-and-untested-areas).
 
 ### 2. Nearby tab (Bluetooth and Wi-Fi scanner)
 - Live list of Bluetooth Low Energy devices around you, strongest first, with signal bars and dBm.
-- Filter: **Trackers** (Google Find Hub, Apple Find My, Fast Pair, devices named like Hoco/E96),
-  **All** (every Bluetooth device) or **Wi-Fi** (nearby Wi-Fi networks: routers, hotspots, Wi-Fi
-  cameras...). Tap any of them to open the hot/cold finder; star it there to save it.
+- Views: **Trackers** (Google Find Hub, Apple Find My, Fast Pair, devices named like Hoco/E96),
+  **All Bluetooth devices**, **Wi-Fi** (nearby networks: routers, hotspots, Wi-Fi cameras...,
+  each with a coloured band badge, 2.4 / 5 / 6 GHz, plus its channel and channel width) and
+  **Wi-Fi spectrum**. Tap a device or network to open the hot/cold finder (which shows the Wi-Fi
+  channel under the name); star it there to save it.
+- **Wi-Fi spectrum:** the classic channel chart, one coloured hump per network, centred on its
+  channel, as wide as its channel width and as tall as its signal, for 2.4, 5 and 6 GHz. Overlapping
+  humps show busy channels. Below it: a channel-load bar per channel (networks weighted by
+  strength), the busiest channel, the quietest choice (on 2.4 GHz among 1, 6 and 11), and a colour
+  legend of networks.
 - Wi-Fi limits, explained in the app: Android lets an app scan Wi-Fi only about every 30 seconds, so
   Wi-Fi readings update slowly. The network you're connected to updates every second. With Developer
   options → "Wi-Fi scan throttling" off, the app scans every 5 seconds.

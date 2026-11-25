@@ -356,6 +356,25 @@ sweep, beeps and vibration) and favorites work unchanged.
   networks show as in range. New permissions: ACCESS_WIFI_STATE and CHANGE_WIFI_STATE; results also
   need location, which the app already has.
 
+## 5.2 - Wi-Fi channels, bands and spectrum analyser
+
+The owner: "In nearby, all is misleading now. Say all bluetooth devices. Also can you add wifi
+channels to the ssids. Also can you add a tab in nearby for a spectrum analyzer to understand which
+channels are busy. Do that overlapping curve visual", then "wifi tab doesnt say which are 5ghz and
+which ones are 2.4ghz".
+- The "All" chip is now "All Bluetooth devices". The chip row scrolls sideways.
+- `WifiHeard` now carries the frequency, channel width (from `ScanResult.channelWidth`) and the centre
+  of the bonded channel (`centerFreq0`). `WifiBands` turns frequencies into channel numbers and bands.
+  `ScanViewModel.wifiNets` keeps the latest reading per BSSID in real dBm, and the connected-network
+  reading keeps the width from the last scan.
+- The Wi-Fi list shows a coloured band badge (2.4 amber, 5 blue, 6 purple) beside the SSID, and the
+  channel and width under it. The finder shows the channel under the network's name.
+- New **Wi-Fi spectrum** view (`ui/WifiSpectrum.kt`): one rounded hump per network, drawn from
+  centre ± width/2 (2.4 GHz 20 MHz drawn 22 MHz wide, as the signal really spreads), with height
+  -100..-20 dBm. Humps are drawn weakest first, have a per-network colour and an SSID label, and
+  rise when the band changes. Channel load sums the strength of networks overlapping each 20 MHz
+  channel. On 2.4 GHz the recommendation is among 1, 6 and 11, the only channels that don't overlap.
+
 ## Repository upload
 
 The owner asked for the project on GitHub with detailed commit messages, the APK, and documentation

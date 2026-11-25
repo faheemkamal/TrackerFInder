@@ -88,7 +88,13 @@ fun FinderScreen(vm: ScanViewModel, t: TrackState) {
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text(title, maxLines = 1) },
+                title = {
+                    val net = if (t.kind == com.example.trackerfinder.TrackerKind.WIFI) vm.wifiNets.collectAsStateWithLifecycle().value[t.address] else null
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(title, maxLines = 1)
+                        if (net != null && net.freq > 0) Text(net.channelLabel, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                },
                 navigationIcon = {
                     IconButton(onClick = vm::closeFinder) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") }
                 },

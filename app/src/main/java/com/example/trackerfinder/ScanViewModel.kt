@@ -101,6 +101,9 @@ class ScanViewModel(app: Application) : AndroidViewModel(app) {
     /** Wi-Fi networks for the Nearby list and the finder (see WifiScan for the scan limits). */
     private val wifi = WifiScan(app, viewModelScope, { list -> list.forEach(::onWifi) }, ::onWifi)
     fun wifiOn() = wifi.isWifiOn()
+    /** Latest reading per Wi-Fi network with its channel, for channel labels and the spectrum view (real dBm). */
+    private val _wifiNets = MutableStateFlow<Map<String, WifiHeard>>(emptyMap())
+    val wifiNets: StateFlow<Map<String, WifiHeard>> = _wifiNets.asStateFlow()
     fun wifiThrottled() = wifi.throttled()
     /** How hard to scan; picked by the screen that's showing (see [setScanMode]). */
     private var mode = ScanMode.BALANCED
@@ -238,6 +241,12 @@ class ScanViewModel(app: Application) : AndroidViewModel(app) {
         val heardAt = now - h.ageMs
         val old = live[h.bssid]
         if (old != null && heardAt <= old.lastSeen) return // same reading delivered again
+        _wifiNets.update { m ->
+            val prev = m[h.bssid]
+            // The connected-network reading has no channel width; keep the scan's.
+            val merged = if (prev != null && h.widthMhz == 20 && prev.freq == h.freq) h.copy(widthMhz = prev.widthMhz, centerMhz = prev.centerMhz) else h
+            m + (h.bssid to merged.copy(at = heardAt, ssid = h.ssid ?: prev?.ssid))
+        }
         // Wi-Fi routers transmit far stronger than a coin-cell tag; shift onto the tag scale so
         // distance, zones and beeps mean the same thing (shown back as real dBm in the lists).
         val rssi = h.rssi - WIFI_OFFSET
@@ -407,6 +416,9 @@ class ScanViewModel(app: Application) : AndroidViewModel(app) {
             ticks++
             val now = SystemClock.elapsedRealtime()
             live.values.removeAll { now - it.lastSeen >= expireAfter(it.kind) }
+            if (ticks % 4 == 0 && _wifiNets.value.values.any { now - it.at >= expireAfter(TrackerKind.WIFI) }) {
+                _wifiNets.update { m -> m.filterValues { now - it.at < expireAfter(TrackerKind.WIFI) } }
+            }
             _devices.value = HashMap(live)
 
             // A favorite we're searching for: wait ~3 s after scanning starts so every nearby
