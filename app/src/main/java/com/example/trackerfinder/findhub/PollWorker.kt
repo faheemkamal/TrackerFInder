@@ -55,7 +55,7 @@ class PollWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker(ctx, 
         /** Movement and area alerts plus file backup, after any check that saved new locations. */
         suspend fun afterNewLocations(ctx: Context) {
             if (HubSettings.moveAlerts(ctx)) runCatching {
-                val moves = FindHub.newMovements(ctx)
+                val moves = FindHub.newMovements(ctx, HubSettings.moveDistance(ctx))
                 for (i in 0 until moves.length()) {
                     val m = moves.getJSONObject(i)
                     HubNotify.moved(ctx, m.getString("id"), m.getString("name"), m.getInt("moved_m"), m.getDouble("lat"), m.getDouble("lon"))

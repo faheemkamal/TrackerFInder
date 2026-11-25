@@ -23,7 +23,7 @@ private val sections = listOf(
     "History" to "Each automatic check (every 10 min by default, or what you choose) saves any new locations on this phone. " +
         "Pick a range to see the path, replay it, read trip stats, or export CSV/GPX. A location only appears when a phone " +
         "passed near the tag, so gaps are normal.",
-    "Alerts" to "Park & guard / movement alerts: notifies you if a tag moves more than 150 m. Area alerts: notifies you when a tag " +
+    "Alerts" to "Park & guard / movement alerts: notifies you if a tag moves more than the distance you set (150 m to 1 km, in More). Area alerts: notifies you when a tag " +
         "leaves a circle you set. Left-behind alerts (Favorites): notifies you when a tracker you had nearby goes out of Bluetooth range.",
     "Find my phone" to "Teach the app your tracker's button in More → Find my phone. After that, pressing the button near the " +
         "phone makes it ring loudly, even on silent. Not every tracker sends a signal on a button press; the app tells you if yours doesn't.",

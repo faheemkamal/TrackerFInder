@@ -22,7 +22,7 @@ checked on a device when reporting results.
 ```
 - Lint must have **0 errors** (it fails the build); warnings are tolerated.
 - Bump `versionCode`/`versionName` in `app/build.gradle.kts` **and** the version text at the bottom
-  of `ui/MoreScreen.kt` for every delivered build. Current: 18 / "4.8".
+  of `ui/MoreScreen.kt` for every delivered build. Current: 19 / "4.9".
 - Release is signed with the debug key on purpose so new APKs install over old ones. If you change the
   signing key, the owner must uninstall (and loses local data) - ask first.
 - Robolectric/screenshot tests were not set up (Maven Central throttling in the build environment).
@@ -45,7 +45,7 @@ checked on a device when reporting results.
 | `findhub/FindHub.kt` | Kotlin↔Python bridge. **All Python calls go through `FindHub.call` on one thread.** |
 | `findhub/HubViewModel.kt` | Find Hub UI state (`HubUi`), refresh, history ranges, replay, export, guard. |
 | `findhub/PollWorker.kt` | Self-rescheduling WorkManager check; `afterNewLocations` (alerts, geofences, file backup). |
-| `findhub/HubSettings.kt` | Prefs `findhub`: interval, toggles, geofences, links, battery, widget cache. |
+| `findhub/HubSettings.kt` | Prefs `findhub`: interval, toggles, movement alert distance (`move_distance`), geofences, links, battery, widget cache. |
 | `findhub/HubNotify.kt`, `RingReceiver.kt` | Find Hub notifications and their Ring action. |
 | `findhub/GoogleAuthActivity.kt` | WebView sign-in (step 1 cookie, step 2 vault keys via JS bridge `mm`). |
 | `findhub/Geo.kt` | Distance, `Trips.stats`, `Trips.stays`. |

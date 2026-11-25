@@ -126,8 +126,9 @@ object FindHub {
     suspend fun driveVerify(ctx: Context): JSONObject = call(ctx) { JSONObject(it.callAttr("drive_verify_json").toString()) }
     suspend fun driveRestore(ctx: Context): Int = call(ctx) { it.callAttr("drive_default_restore").toInt() }
 
-    /** Movement alerts: tags whose newest point is >150 m from the previous one (each reported once). */
-    suspend fun newMovements(ctx: Context): JSONArray = call(ctx) { JSONArray(it.callAttr("new_movements").toString()) }
+    /** Movement alerts: tags whose newest point is more than [thresholdM] from the previous one (each reported once). */
+    suspend fun newMovements(ctx: Context, thresholdM: Int): JSONArray =
+        call(ctx) { JSONArray(it.callAttr("new_movements", thresholdM.toDouble()).toString()) }
 
     /** Recent background/manual checks recorded by the engine, newest first. */
     suspend fun checkLog(ctx: Context): List<CheckRecord> = call(ctx) { m ->

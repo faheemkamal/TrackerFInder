@@ -219,7 +219,7 @@ fun HomeScreen(
                     StatusLine("Last check", last?.let { formatAgo(it.ts * 1000) + if (!it.ok) " (failed)" else if (it.added > 0) " (+${it.added})" else "" } ?: "None yet")
                     if (ui.backgroundOn) StatusLine("Next check", ui.nextCheckAt?.let { "~" + tf.format(Date(it)) } ?: "Scheduling")
                     ui.totalSaved?.let { StatusLine("Locations stored", "$it") }
-                    StatusLine("Movement alerts", if (ui.guard) "On (150 m)" else "Off")
+                    StatusLine("Movement alerts", if (ui.guard) "On (${formatKm(HubSettings.moveDistance(ctx).toDouble())})" else "Off")
                     val fences = fencedIds.size
                     StatusLine("Area alerts", if (fences == 0) "None set" else "$fences tag${if (fences == 1) "" else "s"}")
                     StatusLine("Left-behind alerts", favorites.count { it.alertWhenLeft }.let { if (it == 0) "Off" else "Watching $it" })

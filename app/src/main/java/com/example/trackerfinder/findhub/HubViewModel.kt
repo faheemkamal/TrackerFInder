@@ -305,10 +305,10 @@ class HubViewModel(app: Application) : AndroidViewModel(app) {
 
     /** Park & guard: arm movement alerts from the current position, so the stored point doesn't alert. */
     fun setGuard(on: Boolean) = viewModelScope.launch {
-        if (on) runCatching { FindHub.newMovements(ctx) }
+        if (on) runCatching { FindHub.newMovements(ctx, HubSettings.moveDistance(ctx)) }
         HubSettings.setMoveAlerts(ctx, on)
         _ui.update { it.copy(guard = on) }
-        toast(if (on) "Parked & guarded: you'll be alerted if a tag moves more than 150 m" else "Guard off")
+        toast(if (on) "Parked & guarded: you'll be alerted if a tag moves more than ${com.example.trackerfinder.ui.formatKm(HubSettings.moveDistance(ctx).toDouble())}" else "Guard off")
     }
 
     fun importCsv(uri: Uri) = viewModelScope.launch {

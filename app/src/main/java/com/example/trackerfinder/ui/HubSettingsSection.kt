@@ -45,6 +45,7 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.trackerfinder.findhub.FindHub
 import com.example.trackerfinder.findhub.HubSettings
+import androidx.compose.material3.MaterialTheme
 import com.example.trackerfinder.findhub.HubViewModel
 import com.example.trackerfinder.findhub.PollWorker
 import kotlinx.coroutines.launch
@@ -183,7 +184,7 @@ fun FindHubSettings(hub: HubViewModel) {
             leadingContent = { Icon(Icons.Filled.Warning, null) },
             headlineContent = { Text("Movement alerts") },
             supportingContent = {
-                Text("Notifies you when a tag's new location is more than 150 m from its previous one. Area alerts are set per tag from the map's menu.")
+                Text("Notifies you when a tag's new location is more than the distance below from its previous one. Area alerts are set per tag from the map's menu.")
             },
             trailingContent = {
                 Switch(checked = moves, onCheckedChange = { on ->
@@ -197,6 +198,23 @@ fun FindHubSettings(hub: HubViewModel) {
                 })
             },
         )
+        // Movement alert distance: 150 m to 1 km in 50 m steps, saved when you let go.
+        var moveDist by remember(version) { androidx.compose.runtime.mutableFloatStateOf(HubSettings.moveDistance(ctx).toFloat()) }
+        Column(Modifier.padding(start = 72.dp, end = 24.dp, bottom = 8.dp)) {
+            Text("Alert distance: ${com.example.trackerfinder.ui.formatKm(moveDist.toDouble())}", style = MaterialTheme.typography.bodyMedium)
+            androidx.compose.material3.Slider(
+                value = moveDist,
+                onValueChange = { moveDist = (Math.round(it / 50f) * 50).toFloat() },
+                onValueChangeFinished = { HubSettings.setMoveDistance(ctx, moveDist.toInt()) },
+                valueRange = 150f..1000f,
+                steps = 16,
+            )
+            Text(
+                "Smaller catches short moves but may alert on GPS drift; larger alerts only on real trips.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
         HorizontalDivider(Modifier.padding(horizontal = 16.dp))
         val status = remember(version) { HubSettings.statusNotify(ctx) }
         ListItem(

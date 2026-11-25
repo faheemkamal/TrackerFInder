@@ -24,6 +24,9 @@ object HubSettings {
 
     fun moveAlerts(ctx: Context) = p(ctx).getBoolean("move_alerts", false)
     fun setMoveAlerts(ctx: Context, on: Boolean) = p(ctx).edit().putBoolean("move_alerts", on).apply()
+    /** How far (metres) a tag must move to trigger a movement alert: 150 m to 1 km, default 150. */
+    fun moveDistance(ctx: Context) = p(ctx).getInt("move_distance", 150).coerceIn(150, 1000)
+    fun setMoveDistance(ctx: Context, m: Int) = p(ctx).edit().putInt("move_distance", m.coerceIn(150, 1000)).apply()
 
     /** A quiet notification after each background check ("last check 10:42 · 2 new"). */
     fun statusNotify(ctx: Context) = p(ctx).getBoolean("status_notify", false)

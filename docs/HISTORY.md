@@ -311,6 +311,15 @@ playing back (or dragging the slider) in heatmap mode:
 Outside playback the heatmap looks the same as before. Implemented in `TagMap` by reusing the
 `path-done` and `replay` sources (`TRAIL` = 8).
 
+## 4.9 - Adjustable movement alert distance
+
+The owner: "For movement alerts, its set at 150m. Can you make it adjustable with a slider 150m to 1 km",
+then "Put it in more tab". Under More > Find Hub > Movement alerts there is now an "Alert distance"
+slider, 150 m to 1 km in 50 m steps. It is saved as `findhub`/`move_distance` when you let go, and the
+default is 150 m. The value is passed to Python's existing `tagapp.new_movements(threshold_m)`, both
+from background checks (`PollWorker.afterNewLocations`) and when arming Park & guard. The Home status
+line, the Park & guard toast and Help now show the chosen distance instead of a fixed 150 m.
+
 ## Repository upload
 
 The owner asked for the project on GitHub with detailed commit messages, the APK, and documentation

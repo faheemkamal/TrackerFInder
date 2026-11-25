@@ -9,7 +9,7 @@ person's personal use. It does two jobs:
    with an unofficial client and shows the tag's reported locations on a map, keeps a history, and
    sends alerts. This part comes from [Tag Tracker Open](#licence-and-credits) and GoogleFindMyTools.
 
-> Current version: **4.8** (versionCode 18); 4.7.2 was confirmed working on the owner's phone. Ready-to-install APK: [`releases/TrackerFinder-4.8.apk`](releases/TrackerFinder-4.8.apk).
+> Current version: **4.9** (versionCode 19); 4.7.2 was confirmed working on the owner's phone. Ready-to-install APK: [`releases/TrackerFinder-4.9.apk`](releases/TrackerFinder-4.9.apk).
 > Full step-by-step story and design decisions: [`docs/HISTORY.md`](docs/HISTORY.md).
 > Notes for AI agents and new developers: [`AGENTS.md`](AGENTS.md).
 
@@ -113,7 +113,7 @@ reports back. See [Known limitations](#known-limitations-and-untested-areas).
 - **Quiet hours & safe places:** quiet hours on/off with from/to times; safe places added from where
   the phone is now (100/150/300/500 m), listed and removable.
 - **Find Hub:** account and Sign out; **Export login file** (Save to Files or Share, with a warning);
-  Background checks on/off and interval; Movement alerts on/off; Check status notification;
+  Background checks on/off and interval; Movement alerts on/off with an **alert distance slider (150 m to 1 km, saved)**; Check status notification;
   **Unrestricted battery use** shortcut; **Google Drive backup** (auto switch, Back up now, Check,
   Restore); **Backup file** (write history to a CSV you pick, e.g. in Drive); **Import history from CSV**.
 - **Nearby finder:** Open Google Find Hub, Bluetooth settings, Beep, Vibrate, Distance calibration (reset).
@@ -131,7 +131,8 @@ reports back. See [Known limitations](#known-limitations-and-untested-areas).
 ### 9. Alerts and notifications
 - **Left behind:** "Did you leave Keys behind?" when a favorite hasn't been heard for 2 minutes after
   being near; cleared when it's heard again. Held back during quiet hours and at safe places.
-- **Movement (Park & guard):** a tag moved more than 150 m since its last report.
+- **Movement (Park & guard):** a tag moved more than your alert distance (150 m to 1 km, set in
+  More; default 150 m) since its last report.
 - **Area:** a tag left its circle, and when it comes back.
 - **Low tag battery** (low or very low), at most once a day per tag.
 - **Check status** (optional, silent): how many new locations the last check saved.
@@ -165,7 +166,7 @@ reports back. See [Known limitations](#known-limitations-and-untested-areas).
 
 ## Install (for the user)
 
-1. On the phone, download [`releases/TrackerFinder-4.8.apk`](releases/TrackerFinder-4.8.apk) and open it.
+1. On the phone, download [`releases/TrackerFinder-4.9.apk`](releases/TrackerFinder-4.9.apk) and open it.
    Allow "install unknown apps" for your browser/files app if asked.
 2. Allow "Nearby devices" and "Location" when the app asks. Notifications are needed for alerts.
 3. For the map: Map tab → step 1 sign in to Google → step 2 unlock encryption (your phone's screen lock).
