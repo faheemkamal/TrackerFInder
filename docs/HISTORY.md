@@ -299,6 +299,18 @@ The owner: "make glowing dot just a little bit bigger". The dot radius went up a
 to 10.5/8.6 dp (selected/other), and the halo rings from 8-21 px to 9-24 px. It is still well under the
 4.7 size (14/11.5 dp), and your arrow stays drawn above the dots.
 
+## 4.8 - Heatmap playback
+
+The owner: "In path, there is animation. In heatmap, there is no animation. I can't tell which point is
+which when played back history." In path mode playback already drew the travelled part of the path
+and a dot at the current step, but heatmap mode drew all the heat at once with no dot. Now, while
+playing back (or dragging the slider) in heatmap mode:
+- the heat builds up from the first report to the current step;
+- the current-position dot is shown on top;
+- a short trail joins the last 8 steps, so you can see where the tag just came from.
+Outside playback the heatmap looks the same as before. Implemented in `TagMap` by reusing the
+`path-done` and `replay` sources (`TRAIL` = 8).
+
 ## Repository upload
 
 The owner asked for the project on GitHub with detailed commit messages, the APK, and documentation

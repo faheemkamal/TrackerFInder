@@ -245,15 +245,24 @@ internal fun TagMap(
         val line = geo.map { Point.fromLngLat(it.lon!!, it.lat!!) }
         s.put("fence", fence?.let { Feature.fromGeometry(MapArt.circle(it.lat, it.lon, it.radiusM.toDouble())) })
         val heat = ui.showHeat && !main && geo.isNotEmpty()
-        s.src("heat")?.setGeoJson(FeatureCollection.fromFeatures(if (heat) line.map { Feature.fromGeometry(it) } else emptyList()))
+        val upto = (ui.replayIndex ?: (line.size - 1)).coerceIn(0, (line.size - 1).coerceAtLeast(0))
+        // While playing back, the heatmap builds up point by point instead of showing everything at once.
+        val heatPts = if (ui.replayIndex != null) line.take(upto + 1) else line
+        s.src("heat")?.setGeoJson(FeatureCollection.fromFeatures(if (heat) heatPts.map { Feature.fromGeometry(it) } else emptyList()))
         if (heat) {
             // Stronger blobs when there are few reports, lighter ones when there are thousands.
             val a = (6f / line.size.coerceAtLeast(6)).coerceIn(0.04f, 0.6f) * 1.6f
             s.getLayer("heat")?.setProperties(PF.circleOpacity(a.coerceAtMost(0.6f)))
             s.getLayer("heat-core")?.setProperties(PF.circleOpacity((a * 0.8f).coerceAtMost(0.5f)))
         }
-        if (!heat && line.size >= 2) {
-            val upto = (ui.replayIndex ?: (line.size - 1)).coerceIn(0, line.size - 1)
+        if (heat && ui.replayIndex != null && line.isNotEmpty()) {
+            // Heatmap playback: a short trail of the last few steps plus the current-position dot,
+            // so you can see where the tag is right now and where it just came from.
+            val trail = line.subList((upto - TRAIL).coerceAtLeast(0), upto + 1)
+            s.put("path-all", null)
+            s.put("path-done", if (trail.size >= 2) Feature.fromGeometry(LineString.fromLngLats(trail)) else null)
+            s.put("replay", Feature.fromGeometry(line[upto]))
+        } else if (!heat && line.size >= 2) {
             s.put("path-all", Feature.fromGeometry(LineString.fromLngLats(line)))
             s.put("path-done", if (upto >= 1) Feature.fromGeometry(LineString.fromLngLats(line.take(upto + 1))) else null)
             s.put("replay", if (ui.replayIndex != null) Feature.fromGeometry(line[upto]) else null)
@@ -336,6 +345,9 @@ internal fun TagMap(
         }
     }
 }
+
+/** Steps of recent movement shown behind the dot during heatmap playback. */
+private const val TRAIL = 8
 
 private fun Style.src(id: String) = getSourceAs<GeoJsonSource>(id)
 
