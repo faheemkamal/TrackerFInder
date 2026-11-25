@@ -22,7 +22,7 @@ checked on a device when reporting results.
 ```
 - Lint must have **0 errors** (it fails the build); warnings are tolerated.
 - Bump `versionCode`/`versionName` in `app/build.gradle.kts` **and** the version text at the bottom
-  of `ui/MoreScreen.kt` for every delivered build. Current: 23 / "5.3".
+  of `ui/MoreScreen.kt` for every delivered build. Current: 24 / "5.4".
 - Release is signed with the debug key on purpose so new APKs install over old ones. If you change the
   signing key, the owner must uninstall (and loses local data) - ask first.
 - Robolectric/screenshot tests were not set up (Maven Central throttling in the build environment).
@@ -36,7 +36,7 @@ checked on a device when reporting results.
 | `ScanViewModel.kt` | BLE scanning (`ScanMode` FAST/BALANCED/OFF + boost), device map (published every 500 ms), finder state, favorites, beep/vibrate. Feeds `BeaconBattery` and `FindPhone`. |
 | `Advert.kt`, `ScanParsing.kt`, `Signal.kt` | Advert classification and fingerprints, `advertTokens`, RSSI smoothing, zones, distance model. |
 | `WifiScan.kt` | Wi-Fi networks for Nearby and the finder: `startScan` every 30 s (5 s if throttling is off), scan-results receiver, connected network RSSI every 1 s. Fed into `ScanViewModel.onWifi` as `SeenDevice(kind = WIFI, address = BSSID)`. |
-| `ui/WifiSpectrum.kt` | Nearby's Wi-Fi spectrum view: band chips, overlapping-hump channel chart (Canvas), channel load and quietest channel. Reads `ScanViewModel.wifiNets` (real dBm, frequency, width, centre). |
+| `ui/WifiSpectrum.kt` | Nearby's Wi-Fi spectrum view: band chips, "Mine" chips + "Exclude my networks" (prefs `settings`: `wifi_mine`, `wifi_exclude_mine`), overlapping-hump channel chart (Canvas), channel load and quietest channel. Reads `ScanViewModel.wifiNets` (real dBm, frequency, width, centre). |
 | `Favorites.kt`, `Presence.kt` | Saved trackers (JSON in prefs `settings`), last-heard times (prefs `presence`). |
 | `MonitorService.kt` | Foreground service (type location): filtered BALANCED scans for left-behind alerts and Find my phone. |
 | `FindPhone.kt` | Button-press learning, matching, `PhoneAlarm`, `StopAlarmReceiver`. |
@@ -105,6 +105,8 @@ Python (`app/src/main/python/`): `tagapp.py` (functions Kotlin calls, return JSO
 - Notification ID ranges: Find Hub 4999-21400, find-my-phone 7700, left-behind 100000+.
 - R8 keeps `com.example.trackerfinder.**`; Chaquopy brings its own keep rules. If you add Python code
   that calls Java classes (`from java import ...`), add keep rules for them.
+- Native libs are stored compressed (`useLegacyPackaging = true`) to keep the APK ~26 MB instead of ~43 MB.
+- Wi-Fi scanning runs only in FAST mode or when a Wi-Fi favorite exists; `devices` republishes only when `liveDirty`.
 - Release builds re-download Python packages through pip (unpinned pure-Python deps may move).
 
 ## Untested / risky areas

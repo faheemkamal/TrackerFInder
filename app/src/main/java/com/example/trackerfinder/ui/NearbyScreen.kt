@@ -47,6 +47,7 @@ fun NearbyScreen(vm: ScanViewModel, contentPadding: PaddingValues) {
     val devices by vm.devices.collectAsStateWithLifecycle()
     val favorites by vm.favorites.collectAsStateWithLifecycle()
     val wifiNets by vm.wifiNets.collectAsStateWithLifecycle()
+    val wifiStatus by vm.wifiStatus.collectAsStateWithLifecycle()
     // 0 = trackers, 1 = all Bluetooth devices, 2 = Wi-Fi networks, 3 = Wi-Fi spectrum
     var view by rememberSaveable { mutableIntStateOf(0) }
     val trackersOnly = view == 0
@@ -94,14 +95,14 @@ fun NearbyScreen(vm: ScanViewModel, contentPadding: PaddingValues) {
             )
         }
         if (view == 3) {
-            item { WifiSpectrum(wifiNets.values.toList(), throttled = vm.wifiThrottled(), wifiOn = vm.wifiOn()) }
+            item { WifiSpectrum(wifiNets.values.toList(), throttled = wifiStatus.throttled, wifiOn = wifiStatus.on) }
             return@LazyColumn
         }
         if (wifiView) item {
             Text(
                 when {
-                    !vm.wifiOn() -> "Wi-Fi is off. Turn it on to see networks (you don't need to connect to any)."
-                    vm.wifiThrottled() -> "Android lets apps scan Wi-Fi only about every 30 seconds, so this list and the finder update slowly. " +
+                    !wifiStatus.on -> "Wi-Fi is off. Turn it on to see networks (you don't need to connect to any)."
+                    wifiStatus.throttled -> "Android lets apps scan Wi-Fi only about every 30 seconds, so this list and the finder update slowly. " +
                         "The network you're connected to updates every second. For faster updates: Developer options → turn off \"Wi-Fi scan throttling\"."
                     else -> "Wi-Fi scan throttling is off, so networks update every few seconds."
                 },

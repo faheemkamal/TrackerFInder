@@ -82,6 +82,9 @@ class WifiScan(
 
     val running get() = job?.isActive == true
 
+    /** True while the finder or Nearby is open: read the connected network every second, else every 10 s. */
+    @Volatile var fast = false
+
     fun start() {
         if (running || wm == null || !allowed()) return
         if (!registered) {
@@ -91,6 +94,7 @@ class WifiScan(
         deliver() // whatever the phone already knows, right away
         job = scope.launch {
             var lastScan = 0L
+            var lastConnected = 0L
             while (isActive) {
                 val now = SystemClock.elapsedRealtime()
                 val every = if (throttled()) 30_000L else 5_000L
@@ -98,7 +102,7 @@ class WifiScan(
                     @Suppress("DEPRECATION") runCatching { wm.startScan() }
                     lastScan = now
                 }
-                connected()?.let(onConnected)
+                if (fast || now - lastConnected >= 10_000L) { connected()?.let(onConnected); lastConnected = now }
                 delay(1_000)
             }
         }

@@ -389,6 +389,25 @@ The owner made three requests:
   network is now a smooth parabolic arch (a quadratic Bézier from edge to edge, peaking at its dBm in
   the channel centre), the look used by common Wi-Fi analyser apps.
 
+## 5.4: audit, battery, smaller APK, "exclude my networks"
+The owner asked for a bug audit, clean-up and optimisation, then for a way to leave their own Wi-Fi
+out of the spectrum. Changes:
+- Bugs: the Quick Settings tile and the favorites widget could pick a Wi-Fi favorite (they're for
+  tags); both now skip Wi-Fi. Home's area-alert badges were cached with `remember` and went stale
+  after editing an area; they're recomputed now. `MapTiles.applyHttp` built a new OkHttpClient (and
+  thread pool) on every map/provider change; it now only rebuilds when the connection limit changes.
+- Battery: Wi-Fi scanning only runs in FAST (Nearby, finder), or in BALANCED when a Wi-Fi network is
+  a favorite. The connected network's signal is read every 1 s only in FAST, else every 10 s
+  (`WifiScan.fast`). `devices` is republished only when the live map changed (`liveDirty`). Wi-Fi
+  on/throttled status is a cached `wifiStatus` flow (refreshed every 5 s and on mode change) instead
+  of binder calls on every recomposition.
+- APK size: `packaging.jniLibs.useLegacyPackaging = true` stores native libraries compressed;
+  42.6 MB to 25.7 MB download (Android extracts them on install, so installed size is similar).
+- Spectrum: each network row has a "Mine" chip (saved in prefs `settings`/`wifi_mine`, by SSID so
+  every band and mesh unit counts, hidden networks by BSSID) and an "Exclude my networks" switch
+  (`wifi_exclude_mine`). When on, those networks leave the chart and the busiest/quietest channel
+  maths, so the advice is about the neighbours only.
+
 ## Repository upload
 
 The owner asked for the project on GitHub with detailed commit messages, the APK, and documentation

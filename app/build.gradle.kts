@@ -6,6 +6,8 @@ plugins {
 }
 
 android {
+    // Compress native libraries in the APK (MapLibre alone is 13 MB raw): smaller download; Android unpacks them on install.
+    packaging { jniLibs { useLegacyPackaging = true } }
     namespace = "com.example.trackerfinder"
     compileSdk = 35
 
@@ -13,8 +15,8 @@ android {
         applicationId = "com.example.trackerfinder"
         minSdk = 26
         targetSdk = 35
-        versionCode = 23
-        versionName = "5.3"
+        versionCode = 24
+        versionName = "5.4"
         // The Find Hub engine ships native Python libraries; real phones are 64-bit ARM.
         ndk { abiFilters += listOf("arm64-v8a") }
     }

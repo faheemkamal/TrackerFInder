@@ -9,7 +9,7 @@ person's personal use. It does two jobs:
    with an unofficial client and shows the tag's reported locations on a map, keeps a history, and
    sends alerts. This part comes from [Tag Tracker Open](#licence-and-credits) and GoogleFindMyTools.
 
-> Current version: **5.3** (versionCode 23); 4.7.2 was confirmed working on the owner's phone. Ready-to-install APK: [`releases/TrackerFinder-5.3.apk`](releases/TrackerFinder-5.0.apk).
+> Current version: **5.4** (versionCode 24); 4.7.2 was confirmed working on the owner's phone. Ready-to-install APK: [`releases/TrackerFinder-5.4.apk`](releases/TrackerFinder-5.4.apk).
 > Full step-by-step story and design decisions: [`docs/HISTORY.md`](docs/HISTORY.md).
 > Notes for AI agents and new developers: [`AGENTS.md`](AGENTS.md).
 

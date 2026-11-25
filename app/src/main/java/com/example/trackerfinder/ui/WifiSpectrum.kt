@@ -4,6 +4,7 @@ import android.graphics.Paint
 import android.graphics.Typeface
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import android.content.Context
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -21,14 +22,18 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
@@ -65,6 +70,15 @@ private fun span(n: WifiHeard): Pair<Float, Float> {
     return (c - half) to (c + half)
 }
 
+/**
+ * The person's own networks, so they can be left out when choosing a channel for their router.
+ * Saved in prefs `settings`: `wifi_mine` (keys from [mineKey]) and `wifi_exclude_mine`.
+ * Named networks are matched by name, so every band and mesh unit of one router counts at once;
+ * hidden networks by their address.
+ */
+private fun mineKey(n: WifiHeard) = n.ssid?.let { "ssid:$it" } ?: "bssid:${n.bssid}"
+private fun prefs(ctx: Context) = ctx.getSharedPreferences("settings", Context.MODE_PRIVATE)
+
 /** Stable, distinct colour per network. */
 private fun colorFor(bssid: String): Color {
     val h = ((bssid.hashCode() and 0x7FFFFFFF) % 360).toFloat()
@@ -78,10 +92,23 @@ private fun colorFor(bssid: String): Color {
  */
 @Composable
 internal fun WifiSpectrum(nets: List<WifiHeard>, throttled: Boolean, wifiOn: Boolean) {
+    val ctx = LocalContext.current
+    var mine by remember { mutableStateOf(prefs(ctx).getStringSet("wifi_mine", null)?.toSet() ?: emptySet()) }
+    var excludeMine by remember { mutableStateOf(prefs(ctx).getBoolean("wifi_exclude_mine", false)) }
+    fun toggleMine(n: WifiHeard) {
+        val k = mineKey(n)
+        mine = if (k in mine) mine - k else mine + k
+        prefs(ctx).edit().putStringSet("wifi_mine", mine).apply()
+    }
+    fun isMine(n: WifiHeard) = mineKey(n) in mine
+
     val present = BANDS.filter { b -> nets.any { it.freq in b.lo..b.hi } }
     var bandName by rememberSaveable { mutableStateOf("2.4 GHz") }
     val band = BANDS.first { it.name == (if (present.any { p -> p.name == bandName } || present.isEmpty()) bandName else present.first().name) }
     val inBand = nets.filter { it.freq in band.lo..band.hi }.sortedByDescending { it.rssi }
+    val mineHere = inBand.count(::isMine)
+    // What the chart and the channel advice use: everyone else's networks when excluding mine.
+    val shown = if (excludeMine) inBand.filterNot(::isMine) else inBand
 
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Text(
@@ -105,15 +132,32 @@ internal fun WifiSpectrum(nets: List<WifiHeard>, throttled: Boolean, wifiOn: Boo
             shape = RoundedCornerShape(20.dp),
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
         ) {
-            SpectrumChart(band, inBand, Modifier.fillMaxWidth().height(280.dp).padding(start = 4.dp, end = 12.dp, top = 12.dp, bottom = 8.dp))
+            SpectrumChart(band, shown, Modifier.fillMaxWidth().height(280.dp).padding(start = 4.dp, end = 12.dp, top = 12.dp, bottom = 8.dp))
+        }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text("Exclude my networks", style = MaterialTheme.typography.bodyMedium)
+                Text(
+                    if (mine.isEmpty()) "Tap \"Mine\" on your own networks below first."
+                    else "Hides them from the chart and the channel advice, to pick the quietest channel for your router." +
+                        if (excludeMine && mineHere > 0) " $mineHere hidden here." else "",
+                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            Switch(
+                checked = excludeMine, enabled = mine.isNotEmpty() || excludeMine,
+                onCheckedChange = { excludeMine = it; prefs(ctx).edit().putBoolean("wifi_exclude_mine", it).apply() },
+            )
         }
         if (inBand.isEmpty()) {
             Text("No ${band.name} networks heard yet.", style = MaterialTheme.typography.bodyMedium)
         } else {
-            ChannelLoad(band, inBand)
+            if (shown.isEmpty()) Text("Only your own networks are on ${band.name}, so every channel is free.", style = MaterialTheme.typography.bodyMedium)
+            else ChannelLoad(band, shown)
             Text("Networks", style = MaterialTheme.typography.titleSmall)
             inBand.forEach { n ->
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                val m = isMine(n)
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.alpha(if (m && excludeMine) 0.45f else 1f)) {
                     Canvas(Modifier.size(12.dp)) { drawCircle(colorFor(n.bssid)) }
                     Spacer(Modifier.width(10.dp))
                     Column(Modifier.weight(1f)) {
@@ -121,6 +165,8 @@ internal fun WifiSpectrum(nets: List<WifiHeard>, throttled: Boolean, wifiOn: Boo
                         Text(n.channelLabel, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                     Text("${n.rssi} dBm", style = MaterialTheme.typography.labelMedium)
+                    Spacer(Modifier.width(8.dp))
+                    FilterChip(selected = m, onClick = { toggleMine(n) }, label = { Text("Mine") })
                 }
             }
         }

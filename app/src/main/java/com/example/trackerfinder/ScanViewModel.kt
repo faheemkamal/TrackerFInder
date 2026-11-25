@@ -100,11 +100,17 @@ class ScanViewModel(app: Application) : AndroidViewModel(app) {
     private var filter = SignalFilter()
     /** Wi-Fi networks for the Nearby list and the finder (see WifiScan for the scan limits). */
     private val wifi = WifiScan(app, viewModelScope, { list -> list.forEach(::onWifi) }, ::onWifi)
-    fun wifiOn() = wifi.isWifiOn()
     /** Latest reading per Wi-Fi network with its channel, for channel labels and the spectrum view (real dBm). */
     private val _wifiNets = MutableStateFlow<Map<String, WifiHeard>>(emptyMap())
     val wifiNets: StateFlow<Map<String, WifiHeard>> = _wifiNets.asStateFlow()
-    fun wifiThrottled() = wifi.throttled()
+    /** Wi-Fi switched on and Android's scan throttling, cached so screens don't ask the system on every redraw. */
+    data class WifiStatus(val on: Boolean = true, val throttled: Boolean = true)
+    private val _wifiStatus = MutableStateFlow(WifiStatus())
+    val wifiStatus: StateFlow<WifiStatus> = _wifiStatus.asStateFlow()
+    private fun refreshWifiStatus() { _wifiStatus.value = WifiStatus(wifi.isWifiOn(), wifi.throttled()) }
+    fun wifiThrottled() = _wifiStatus.value.throttled
+    /** Set when [live] changes, so [devices] is only republished when something actually moved. */
+    @Volatile private var liveDirty = false
     /** How hard to scan; picked by the screen that's showing (see [setScanMode]). */
     private var mode = ScanMode.BALANCED
     /** True between the activity's onStart and onStop. */
@@ -185,7 +191,12 @@ class ScanViewModel(app: Application) : AndroidViewModel(app) {
         if (scanning) stopScanOnly()
         // Wi-Fi alongside Bluetooth on Home, Favorites, Nearby and the finder (not on Map/More).
         // Android caps it at one scan per 30 s, so the battery cost is small.
-        if (this.mode != ScanMode.OFF) wifi.start() else wifi.stop()
+        // Wi-Fi only where it's shown: Nearby and the finder (FAST), or Favorites/Home when a Wi-Fi
+        // network is saved as a favorite. The connected network is read every second only in FAST.
+        val wantWifi = this.mode == ScanMode.FAST || (this.mode == ScanMode.BALANCED && _favorites.value.any { it.kind == TrackerKind.WIFI })
+        wifi.fast = this.mode == ScanMode.FAST
+        refreshWifiStatus()
+        if (wantWifi) wifi.start() else wifi.stop()
         val mode = if (boost) ScanMode.FAST else mode
         if (mode == ScanMode.OFF) return
         val scanner = adapter?.bluetoothLeScanner
@@ -264,6 +275,7 @@ class ScanViewModel(app: Application) : AndroidViewModel(app) {
         val address = seen.address
         val fingerprint = seen.fingerprint
         live[address] = seen
+        liveDirty = true
         // Presence feeds the widget and left-behind alerts.
         var presenceChanged = false
         _favorites.value.forEach { if (it.matches(seen)) presenceChanged = Presence.heard(getApplication(), it.id) || presenceChanged }
@@ -415,11 +427,12 @@ class ScanViewModel(app: Application) : AndroidViewModel(app) {
             delay(500)
             ticks++
             val now = SystemClock.elapsedRealtime()
-            live.values.removeAll { now - it.lastSeen >= expireAfter(it.kind) }
+            if (live.values.removeAll { now - it.lastSeen >= expireAfter(it.kind) }) liveDirty = true
             if (ticks % 4 == 0 && _wifiNets.value.values.any { now - it.at >= expireAfter(TrackerKind.WIFI) }) {
                 _wifiNets.update { m -> m.filterValues { now - it.at < expireAfter(TrackerKind.WIFI) } }
             }
-            _devices.value = HashMap(live)
+            if (liveDirty) { liveDirty = false; _devices.value = HashMap(live) }
+            if (ticks % 10 == 0) refreshWifiStatus()
 
             // A favorite we're searching for: wait ~3 s after scanning starts so every nearby
             // look-alike can show up, then take its exact address or the strongest look-alike.

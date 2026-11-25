@@ -82,7 +82,7 @@ fun HomeScreen(
     val inRange = statuses.count { it.second !is FavoriteStatus.Away }
     val tf = remember { DateFormat.getTimeInstance(DateFormat.SHORT) }
     // Read area alerts from storage once per tag list, not on every Bluetooth update.
-    val fencedIds = remember(ui.devices) { ui.devices.filter { HubSettings.geofence(ctx, it.id) != null }.map { it.id }.toSet() }
+    val fencedIds = ui.devices.filter { HubSettings.geofence(ctx, it.id) != null }.map { it.id }.toSet()
 
     LazyColumn(
         Modifier.fillMaxSize(),

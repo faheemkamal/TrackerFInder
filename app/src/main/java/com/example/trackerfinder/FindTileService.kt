@@ -10,7 +10,7 @@ import android.service.quicksettings.TileService
 /** Quick Settings tile: one tap opens the hot/cold finder for your first saved tracker. */
 class FindTileService : TileService() {
     override fun onStartListening() {
-        val favs = FavoritesStore.load(getSharedPreferences(ScanViewModel.PREFS, Context.MODE_PRIVATE))
+        val favs = FavoritesStore.load(getSharedPreferences(ScanViewModel.PREFS, Context.MODE_PRIVATE)).filter { it.kind != TrackerKind.WIFI }
         qsTile?.apply {
             state = Tile.STATE_INACTIVE
             label = getString(R.string.tile_label)
@@ -21,7 +21,8 @@ class FindTileService : TileService() {
 
     @android.annotation.SuppressLint("StartActivityAndCollapseDeprecated") // the Intent form is the only one before Android 14
     override fun onClick() {
-        val fav = FavoritesStore.load(getSharedPreferences(ScanViewModel.PREFS, Context.MODE_PRIVATE)).firstOrNull()
+        // The tile is for your tracker; skip saved Wi-Fi networks.
+        val fav = FavoritesStore.load(getSharedPreferences(ScanViewModel.PREFS, Context.MODE_PRIVATE)).firstOrNull { it.kind != TrackerKind.WIFI }
         val i = Intent(this, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
         fav?.let { i.putExtra(MainActivity.EXTRA_FAVORITE_ID, it.id) }
         if (Build.VERSION.SDK_INT >= 34) {

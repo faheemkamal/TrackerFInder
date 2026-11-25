@@ -54,15 +54,20 @@ object MapTiles {
     }
 
     fun set(ctx: Context, p: MapProvider) {
-        // commit() (not apply()) so the choice is on disk even if the app is swiped away right after.
-        ctx.getSharedPreferences("settings", Context.MODE_PRIVATE).edit().putString(KEY, p.name).commit()
+        ctx.getSharedPreferences("settings", Context.MODE_PRIVATE).edit().putString(KEY, p.name).apply()
         provider.value = p
         applyHttp(p)
     }
 
+    private var httpFor: Int = -1
+
     private fun applyHttp(p: MapProvider) {
+        // One client per connection policy; making a new one for every map leaked thread pools.
+        val perHost = if (p == MapProvider.OSM) 2 else 6
+        if (perHost == httpFor) return
+        httpFor = perHost
         val client = OkHttpClient.Builder()
-            .dispatcher(Dispatcher().apply { maxRequestsPerHost = if (p == MapProvider.OSM) 2 else 6 })
+            .dispatcher(Dispatcher().apply { maxRequestsPerHost = perHost })
             .addInterceptor { chain -> chain.proceed(chain.request().newBuilder().header("User-Agent", USER_AGENT).build()) }
             .build()
         HttpRequestUtil.setOkHttpClient(client)

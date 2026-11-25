@@ -38,7 +38,8 @@ class FavoritesWidget : AppWidgetProvider() {
 
         private fun render(ctx: Context): RemoteViews {
             val views = RemoteViews(ctx.packageName, R.layout.widget_favorites)
-            val favs = FavoritesStore.load(ctx.getSharedPreferences(ScanViewModel.PREFS, Context.MODE_PRIVATE)).take(ROWS.size)
+            val favs = FavoritesStore.load(ctx.getSharedPreferences(ScanViewModel.PREFS, Context.MODE_PRIVATE))
+                .filter { it.kind != TrackerKind.WIFI }.take(ROWS.size) // "My trackers" widget: Bluetooth only
             val now = System.currentTimeMillis()
 
             views.setOnClickPendingIntent(R.id.widget_root, openApp(ctx, null, 0))
