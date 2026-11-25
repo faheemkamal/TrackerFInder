@@ -303,7 +303,7 @@ private fun DeviceDetail(
                 )
             }
             dev.lastAccuracy?.let { Text("Accuracy about ±${it.toInt()} m (shaded circle)", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) }
-            if (fence != null) Text("Area alert: ${fence.radiusM} m", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.tertiary)
+            if (fence != null) Text("Area alert: ${formatKm(fence.radiusM.toDouble())}" + (fence.label?.let { " around " + it.split(",").first() } ?: ""), maxLines = 1, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.tertiary)
             AnimatedVisibility(dev.lastError != null) {
                 Text("Last check problem: ${dev.lastError}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
             }
@@ -361,8 +361,8 @@ private fun TagAvatar(name: String, selected: Boolean, size: Dp = 40.dp) {
 
 /** A simple crosshair, drawn so we don't need an icon pack. */
 @Composable
-private fun MyLocationGlyph(color: Color) {
-    Canvas(Modifier.size(22.dp)) {
+internal fun MyLocationGlyph(color: Color, modifier: Modifier = Modifier.size(22.dp)) {
+    Canvas(modifier) {
         val c = Offset(size.width / 2, size.height / 2)
         val r = size.minDimension * 0.30f
         drawCircle(color, r, c, style = Stroke(width = size.minDimension * 0.1f))

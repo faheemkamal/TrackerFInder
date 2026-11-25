@@ -117,6 +117,8 @@ internal fun TagMap(
     showMe: Boolean = false,
     onMe: (LatLng) -> Unit = {},
     onReady: (MapHandle) -> Unit = {},
+    /** When set, a tap on the map reports where (used to place an area alert) instead of describing pins. */
+    onMapTap: ((LatLng) -> Unit)? = null,
     creditPadding: PaddingValues = PaddingValues(8.dp),
     creditAlignment: Alignment = Alignment.BottomStart,
 ) {
@@ -143,6 +145,7 @@ internal fun TagMap(
     val onReadyNow by rememberUpdatedState(onReady)
     val onMeNow by rememberUpdatedState(onMe)
     val uiNow by rememberUpdatedState(ui)
+    val onTapNow by rememberUpdatedState(onMapTap)
 
     // Lifecycle: MapView needs start/resume/pause/stop/destroy.
     val owner = LocalLifecycleOwner.current
@@ -174,7 +177,7 @@ internal fun TagMap(
         view.getMapAsync { m ->
             m.uiSettings.isAttributionEnabled = false
             m.uiSettings.isLogoEnabled = false
-            m.addOnMapClickListener { ll -> describeTap(ctx, m, ll, uiNow) }
+            m.addOnMapClickListener { ll -> onTapNow?.let { it(ll); true } ?: describeTap(ctx, m, ll, uiNow) }
             val h = MapHandle(m, density)
             map = m
             handle = h

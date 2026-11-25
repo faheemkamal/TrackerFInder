@@ -9,7 +9,7 @@ person's personal use. It does two jobs:
    with an unofficial client and shows the tag's reported locations on a map, keeps a history, and
    sends alerts. This part comes from [Tag Tracker Open](#licence-and-credits) and GoogleFindMyTools.
 
-> Current version: **4.9** (versionCode 19); 4.7.2 was confirmed working on the owner's phone. Ready-to-install APK: [`releases/TrackerFinder-4.9.apk`](releases/TrackerFinder-4.9.apk).
+> Current version: **5.0** (versionCode 20); 4.7.2 was confirmed working on the owner's phone. Ready-to-install APK: [`releases/TrackerFinder-5.0.apk`](releases/TrackerFinder-5.0.apk).
 > Full step-by-step story and design decisions: [`docs/HISTORY.md`](docs/HISTORY.md).
 > Notes for AI agents and new developers: [`AGENTS.md`](AGENTS.md).
 
@@ -69,8 +69,12 @@ reports back. See [Known limitations](#known-limitations-and-untested-areas).
     **Locate** (ask Google for a fresh location), **Find nearby** (opens the Bluetooth finder for the
     linked favorite, asking once which favorite it is), **Directions** (opens your maps app),
     **History**, **Share** (Google Maps link); plus **Park & guard**.
-  - Menu: Rename, Set/Change area alert (circle of 100 m to 3 km around the tag, or move it to the
-    current spot, or remove it), Check all tags now, Refresh tag list from Google, Open Google Find Hub.
+  - Menu: Rename, Set/Change area alert, Check all tags now, Refresh tag list from Google, Open
+    Google Find Hub.
+  - **Area alert screen** (like Find Hub's): search an address or place, tap the map, or use the
+    tag's or your own location as the center; pick a radius (100 m to 3 km) with a slider and see the
+    circle live on the map, with how far the tag is from it and whether it's inside now. Saved per tag
+    (with the place name), remembered across restarts; Remove turns it off.
 - Map drawing (MapLibre): each tag is a "glow dot": a coral dot with a thick white border and
   shadow, inside two soft halo rings that keep spreading out (coral so it never looks like your blue
   arrow; the selected tag is a little larger; your arrow is always drawn above the dots), accuracy circle, area-alert circle, your phone as a blue pointer arrow that turns with the compass, with
@@ -133,7 +137,8 @@ reports back. See [Known limitations](#known-limitations-and-untested-areas).
   being near; cleared when it's heard again. Held back during quiet hours and at safe places.
 - **Movement (Park & guard):** a tag moved more than your alert distance (150 m to 1 km, set in
   More; default 150 m) since its last report.
-- **Area:** a tag left its circle, and when it comes back.
+- **Area:** "Keys left Home Street" when a tag is found outside its circle, and "back at …" when it
+  returns (checked after each background check).
 - **Low tag battery** (low or very low), at most once a day per tag.
 - **Check status** (optional, silent): how many new locations the last check saved.
 - Find Hub alerts have **Ring tag** and **Open in Maps** buttons; tapping opens the tag on the map.
@@ -166,7 +171,7 @@ reports back. See [Known limitations](#known-limitations-and-untested-areas).
 
 ## Install (for the user)
 
-1. On the phone, download [`releases/TrackerFinder-4.9.apk`](releases/TrackerFinder-4.9.apk) and open it.
+1. On the phone, download [`releases/TrackerFinder-5.0.apk`](releases/TrackerFinder-5.0.apk) and open it.
    Allow "install unknown apps" for your browser/files app if asked.
 2. Allow "Nearby devices" and "Location" when the app asks. Notifications are needed for alerts.
 3. For the map: Map tab → step 1 sign in to Google → step 2 unlock encryption (your phone's screen lock).

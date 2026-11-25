@@ -118,8 +118,8 @@ class PollWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker(ctx, 
                 val lat = d.lastLat ?: return@forEach
                 val lon = d.lastLon ?: return@forEach
                 val inside = Geo.distanceM(fence.lat, fence.lon, lat, lon) <= fence.radiusM
-                if (fence.wasInside == true && !inside) HubNotify.leftArea(ctx, d.id, d.name, fence.radiusM, lat, lon)
-                if (fence.wasInside == false && inside) HubNotify.backInArea(ctx, d.id, d.name)
+                if (fence.wasInside == true && !inside) HubNotify.leftArea(ctx, d.id, d.name, fence.radiusM, lat, lon, fence.label)
+                if (fence.wasInside == false && inside) HubNotify.backInArea(ctx, d.id, d.name, fence.label)
                 if (fence.wasInside != inside) HubSettings.setGeofence(ctx, d.id, fence.copy(wasInside = inside))
             }
         }

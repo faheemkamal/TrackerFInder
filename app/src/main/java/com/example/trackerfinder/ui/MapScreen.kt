@@ -283,24 +283,13 @@ private fun HubContent(hub: HubViewModel, ui: HubUi, openFindHub: () -> Unit, fi
         NicknameDialog("Rename tag", dev.name, "Save", { showRename = false }) { hub.rename(it); showRename = false }
     }
     if (showFence && dev != null) {
-        FenceDialog(
+        AreaAlertEditor(
+            ui = ui,
+            dev = dev,
             current = fence,
-            canCenter = dev.lastLat != null,
             onDismiss = { showFence = false },
             onRemove = { HubSettings.setGeofence(ctx, dev.id, null); fenceVersion++; showFence = false },
-            onSave = { r ->
-                val lat = fence?.lat ?: dev.lastLat!!
-                val lon = fence?.lon ?: dev.lastLon!!
-                val inside = dev.lastLat?.let { Geo.distanceM(lat, lon, it, dev.lastLon!!) <= r }
-                HubSettings.setGeofence(ctx, dev.id, Geofence(lat, lon, r, inside))
-                fenceVersion++
-                showFence = false
-            },
-            onRecenter = { r ->
-                HubSettings.setGeofence(ctx, dev.id, Geofence(dev.lastLat!!, dev.lastLon!!, r, true))
-                fenceVersion++
-                showFence = false
-            },
+            onSave = { g -> HubSettings.setGeofence(ctx, dev.id, g); fenceVersion++; showFence = false },
         )
     }
 }
@@ -534,44 +523,6 @@ private fun CheckCard(hub: HubViewModel, ui: HubUi) {
             TextButton(onClick = hub::checkAllNow, enabled = ui.busy == null) { Text("Check now") }
         }
     }
-}
-
-@Composable
-private fun FenceDialog(
-    current: Geofence?,
-    canCenter: Boolean,
-    onDismiss: () -> Unit,
-    onRemove: () -> Unit,
-    onSave: (Int) -> Unit,
-    onRecenter: (Int) -> Unit,
-) {
-    var radius by remember { mutableIntStateOf(current?.radiusM ?: 300) }
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        icon = { Icon(Icons.Filled.Lock, null) },
-        title = { Text("Area alert") },
-        text = {
-            Column {
-                Text(
-                    if (current == null) "Get notified when the tag's location is outside this circle around where it is now. " +
-                        "Find Hub positions can be off by 50 m or more, so keep the radius generous."
-                    else "Notifies you when the tag leaves this circle and when it comes back.",
-                    style = MaterialTheme.typography.bodyMedium,
-                )
-                Spacer(Modifier.height(12.dp))
-                Text("Radius: $radius m", style = MaterialTheme.typography.titleSmall)
-                Slider(value = radius.toFloat(), onValueChange = { radius = (it / 50).toInt() * 50 }, valueRange = 100f..3000f)
-                if (current != null && canCenter) TextButton(onClick = { onRecenter(radius) }) { Text("Move center to the tag's latest location") }
-            }
-        },
-        confirmButton = { TextButton(onClick = { onSave(radius) }, enabled = current != null || canCenter) { Text("Save") } },
-        dismissButton = {
-            Row {
-                if (current != null) TextButton(onClick = onRemove) { Text("Remove") }
-                TextButton(onClick = onDismiss) { Text("Cancel") }
-            }
-        },
-    )
 }
 
 private fun customLabel(ui: HubUi): String {

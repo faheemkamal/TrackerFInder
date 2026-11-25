@@ -63,8 +63,11 @@ object HubNotify {
     fun moved(ctx: Context, id: String, name: String, meters: Int, lat: Double, lon: Double) =
         post(ctx, id, 0, "$name is moving", "It moved about $meters m since its last report. Tap to see it on the map.", lat, lon)
 
-    fun leftArea(ctx: Context, id: String, name: String, radius: Int, lat: Double, lon: Double) =
-        post(ctx, id, 1, "$name left its area", "Its latest location is outside the $radius m area you set. Tap to see where it is.", lat, lon)
+    fun leftArea(ctx: Context, id: String, name: String, radius: Int, lat: Double, lon: Double, place: String? = null) =
+        post(ctx, id, 1, if (place != null) "$name left ${short(place)}" else "$name left its area",
+            "Its latest location is more than $radius m from ${place?.let(::short) ?: "the center of the area you set"}. Tap to see where it is.", lat, lon)
+
+    private fun short(place: String) = place.split(",").first().trim().take(40)
 
     /** Quiet status after a background check (optional, like Tag Tracker Open's sync status). */
     fun status(ctx: Context, added: Int) {
@@ -85,8 +88,9 @@ object HubNotify {
         try { NotificationManagerCompat.from(ctx).notify(4999, n) } catch (_: SecurityException) {}
     }
 
-    fun backInArea(ctx: Context, id: String, name: String) =
-        post(ctx, id, 2, "$name is back in its area", "Its latest location is inside the area you set again.")
+    fun backInArea(ctx: Context, id: String, name: String, place: String? = null) =
+        post(ctx, id, 2, if (place != null) "$name is back at ${short(place)}" else "$name is back in its area",
+            "Its latest location is inside the area you set again.")
 
     fun battery(ctx: Context, id: String, level: String) {
         val name = runCatching {

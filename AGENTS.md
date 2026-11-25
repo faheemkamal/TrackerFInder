@@ -22,7 +22,7 @@ checked on a device when reporting results.
 ```
 - Lint must have **0 errors** (it fails the build); warnings are tolerated.
 - Bump `versionCode`/`versionName` in `app/build.gradle.kts` **and** the version text at the bottom
-  of `ui/MoreScreen.kt` for every delivered build. Current: 19 / "4.9".
+  of `ui/MoreScreen.kt` for every delivered build. Current: 20 / "5.0".
 - Release is signed with the debug key on purpose so new APKs install over old ones. If you change the
   signing key, the owner must uninstall (and loses local data) - ask first.
 - Robolectric/screenshot tests were not set up (Maven Central throttling in the build environment).
@@ -53,6 +53,7 @@ checked on a device when reporting results.
 | `ui/HomeScreen.kt`, `ui/MapPage.kt`, `ui/MapScreen.kt` | Home; full-screen map + sheet; setup and History page. |
 | `ui/TagMap.kt` | `TagMap` composable (MapLibre MapView): GeoJSON sources/layers for pins, halo rings, path, heatmap, points, areas, phone arrow; `MapHandle` (flyTo/fit); `MeTracker` (GPS + compass). |
 | `ui/MapOverlays.kt`, `ui/MapTiles.kt` | `MapArt` bitmaps (tag glow dot in `TagCoral`, phone arrow) and `circle()`; base-map styles, saved choice (`settings`/`map_style`), OkHttp UA. |
+| `ui/AreaAlertEditor.kt` | Full-screen area alert set-up: address search (`Addresses.search`), map tap (`TagMap(onMapTap=)`), tag/my location, radius slider, live circle. |
 | `ui/MoreScreen.kt`, `ui/HubSettingsSection.kt`, `ui/ExtraSettings.kt`, `ui/HelpDialog.kt` | Settings and help. |
 
 Python (`app/src/main/python/`): `tagapp.py` (functions Kotlin calls, return JSON strings),

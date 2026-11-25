@@ -4,7 +4,8 @@ import android.content.Context
 import org.json.JSONObject
 
 /** An "area alert": notify when the tag's newest location is outside (or back inside) this circle. */
-data class Geofence(val lat: Double, val lon: Double, val radiusM: Int, val wasInside: Boolean?)
+/** An area alert: a circle around a place ([label] = its address or name, if known). */
+data class Geofence(val lat: Double, val lon: Double, val radiusM: Int, val wasInside: Boolean?, val label: String? = null)
 
 /** Find Hub settings kept on this phone only. */
 object HubSettings {
@@ -56,7 +57,8 @@ object HubSettings {
         return runCatching {
             val o = JSONObject(s)
             Geofence(o.getDouble("lat"), o.getDouble("lon"), o.getInt("r"),
-                if (o.has("in")) o.getBoolean("in") else null)
+                if (o.has("in")) o.getBoolean("in") else null,
+                o.optString("label").ifBlank { null })
         }.getOrNull()
     }
 
@@ -65,6 +67,7 @@ object HubSettings {
         if (g == null) e.remove("fence.$deviceId") else e.putString("fence.$deviceId", JSONObject().apply {
             put("lat", g.lat); put("lon", g.lon); put("r", g.radiusM)
             g.wasInside?.let { put("in", it) }
+            g.label?.let { put("label", it) }
         }.toString())
         e.apply()
     }

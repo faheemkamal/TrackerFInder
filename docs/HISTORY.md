@@ -320,6 +320,23 @@ default is 150 m. The value is passed to Python's existing `tagapp.new_movements
 from background checks (`PollWorker.afterNewLocations`) and when arming Park & guard. The Home status
 line, the Park & guard toast and Help now show the chosen distance instead of a fixed 150 m.
 
+## 5.0 - Area alerts like Find Hub
+
+The owner: "Can you make area alert similar to find hub. You set the address and a radius from that and
+if the tracker moves beyond the area, you get notified". Before, an area was always centred on the
+tag's latest location, and you could only change the radius in a small dialog. Now "Set/Change area
+alert" opens a full-screen editor (`ui/AreaAlertEditor.kt`):
+- Search an address or place: `Addresses.search` uses Android's Geocoder forward lookup (on most
+  phones this asks Google), and shows up to 5 results. You can also tap the map (new `onMapTap`
+  parameter on `TagMap`), or use "Tag's location" or "My location" (last known fix).
+- A radius slider (100 m to 3 km, 50 m steps), with the circle previewed live and the camera kept
+  fitted to it. Below it: the place name, how far the tag is from the centre, and whether it is inside
+  right now.
+- `Geofence` gained `label` (stored as `label` in the `fence.<id>` JSON). Notifications use it:
+  "Keys left <place>" / "Keys is back at <place>".
+- Checking is unchanged: `PollWorker.checkGeofences` after each background check, alerting on
+  inside->outside and outside->inside.
+
 ## Repository upload
 
 The owner asked for the project on GitHub with detailed commit messages, the APK, and documentation

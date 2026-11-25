@@ -62,6 +62,28 @@ object Addresses {
         }
     }
 
+    /** A place found by [search]: a readable name and its coordinates. */
+    data class Place(val label: String, val lat: Double, val lon: Double)
+
+    /** Find places by name or address (forward geocoding), best matches first. Empty if none or offline. */
+    suspend fun search(ctx: Context, query: String, max: Int = 5): List<Place> {
+        if (query.isBlank() || !Geocoder.isPresent()) return emptyList()
+        val g = Geocoder(ctx.applicationContext, Locale.getDefault())
+        val list: List<Address> = if (Build.VERSION.SDK_INT >= 33) {
+            suspendCancellableCoroutine { c ->
+                g.getFromLocationName(query, max, object : Geocoder.GeocodeListener {
+                    override fun onGeocode(list: MutableList<Address>) { if (c.isActive) c.resume(list.toList()) }
+                    override fun onError(errorMessage: String?) { if (c.isActive) c.resume(emptyList()) }
+                })
+            }
+        } else withContext(Dispatchers.IO) {
+            @Suppress("DEPRECATION")
+            runCatching { g.getFromLocationName(query, max)?.toList() }.getOrNull() ?: emptyList()
+        }
+        return list.filter { it.hasLatitude() && it.hasLongitude() }
+            .map { Place(it.getAddressLine(0)?.takeIf { s -> s.isNotBlank() } ?: format(it), it.latitude, it.longitude) }
+    }
+
     /** Short, readable form: "12 Road Name, Area" rather than the full postal address. */
     private fun format(a: Address): String {
         val street = listOfNotNull(a.subThoroughfare, a.thoroughfare).joinToString(" ").ifBlank { null }
