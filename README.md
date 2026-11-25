@@ -9,7 +9,7 @@ person's personal use. It does two jobs:
    with an unofficial client and shows the tag's reported locations on a map, keeps a history, and
    sends alerts. This part comes from [Tag Tracker Open](#licence-and-credits) and GoogleFindMyTools.
 
-> Current version: **5.0** (versionCode 20); 4.7.2 was confirmed working on the owner's phone. Ready-to-install APK: [`releases/TrackerFinder-5.0.apk`](releases/TrackerFinder-5.0.apk).
+> Current version: **5.1** (versionCode 21); 4.7.2 was confirmed working on the owner's phone. Ready-to-install APK: [`releases/TrackerFinder-5.1.apk`](releases/TrackerFinder-5.0.apk).
 > Full step-by-step story and design decisions: [`docs/HISTORY.md`](docs/HISTORY.md).
 > Notes for AI agents and new developers: [`AGENTS.md`](AGENTS.md).
 
@@ -37,9 +37,14 @@ reports back. See [Known limitations](#known-limitations-and-untested-areas).
   locations stored, movement alerts on/off, number of tags with area alerts, left-behind alerts.
 - Refreshes itself every minute.
 
-### 2. Nearby tab (Bluetooth scanner)
+### 2. Nearby tab (Bluetooth and Wi-Fi scanner)
 - Live list of Bluetooth Low Energy devices around you, strongest first, with signal bars and dBm.
-- Filter: **Trackers** (Google Find Hub, Apple Find My, Fast Pair, devices named like Hoco/E96) or **All devices**.
+- Filter: **Trackers** (Google Find Hub, Apple Find My, Fast Pair, devices named like Hoco/E96),
+  **All** (every Bluetooth device) or **Wi-Fi** (nearby Wi-Fi networks: routers, hotspots, Wi-Fi
+  cameras...). Tap any of them to open the hot/cold finder; star it there to save it.
+- Wi-Fi limits, explained in the app: Android lets an app scan Wi-Fi only about every 30 seconds, so
+  Wi-Fi readings update slowly. The network you're connected to updates every second. With Developer
+  options → "Wi-Fi scan throttling" off, the app scans every 5 seconds.
 - Help text when nothing shows (press the tracker's button, turn on Location).
 - Tap any device to open the finder.
 
@@ -100,10 +105,10 @@ reports back. See [Known limitations](#known-limitations-and-untested-areas).
   name when it reports one ("Google says: Home"), "your phone" for reports from your own phone.
   Tap one to jump the replay to it.
 
-### 6. Favorites tab (saved Bluetooth trackers)
+### 6. Favorites tab (saved Bluetooth trackers and Wi-Fi networks)
 - Each saved tracker with nickname, type, live status (In range / Possibly nearby with count of
   look-alikes / Last seen …) and **Find**.
-- Menu: **Alert me if left behind** on/off, Rename, Open in Find Hub, Remove (with confirmation).
+- Menu: **Alert me if left behind** on/off (Bluetooth only), Rename, Open in Find Hub, Remove (with confirmation).
 - Badge on the tab with the number of favorites.
 
 ### 7. More tab (settings)

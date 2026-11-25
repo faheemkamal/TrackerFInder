@@ -38,6 +38,9 @@ data class SeenDevice(
     val lastSeen: Long,
 )
 
+/** Signal as Android reports it (Wi-Fi readings are stored shifted by [ScanViewModel.WIFI_OFFSET]). */
+val SeenDevice.realRssi: Int get() = if (kind == TrackerKind.WIFI) rssi + ScanViewModel.WIFI_OFFSET else rssi
+
 data class TrackState(
     /** Empty while we're still searching for a favorite that isn't in range yet. */
     val address: String,
@@ -94,7 +97,11 @@ class ScanViewModel(app: Application) : AndroidViewModel(app) {
 
     /** Live map updated on every advert; published to [devices] at most twice a second to spare the UI. */
     private val live = LinkedHashMap<String, SeenDevice>()
-    private val filter = SignalFilter()
+    private var filter = SignalFilter()
+    /** Wi-Fi networks for the Nearby list and the finder (see WifiScan for the scan limits). */
+    private val wifi = WifiScan(app, viewModelScope, { list -> list.forEach(::onWifi) }, ::onWifi)
+    fun wifiOn() = wifi.isWifiOn()
+    fun wifiThrottled() = wifi.throttled()
     /** How hard to scan; picked by the screen that's showing (see [setScanMode]). */
     private var mode = ScanMode.BALANCED
     /** True between the activity's onStart and onStop. */
@@ -132,6 +139,7 @@ class ScanViewModel(app: Application) : AndroidViewModel(app) {
         active = false
         pendingRestart?.cancel(); pendingRestart = null
         stopScanOnly()
+        wifi.stop()
         tickJob?.cancel(); tickJob = null
         beepJob?.cancel(); beepJob = null
         persistFavoritesIfDirty()
@@ -172,6 +180,9 @@ class ScanViewModel(app: Application) : AndroidViewModel(app) {
         if (tickJob == null) tickJob = viewModelScope.launch { tickLoop() }
         if (beepJob == null) beepJob = viewModelScope.launch { beepLoop() }
         if (scanning) stopScanOnly()
+        // Wi-Fi alongside Bluetooth on Home, Favorites, Nearby and the finder (not on Map/More).
+        // Android caps it at one scan per 30 s, so the battery cost is small.
+        if (this.mode != ScanMode.OFF) wifi.start() else wifi.stop()
         val mode = if (boost) ScanMode.FAST else mode
         if (mode == ScanMode.OFF) return
         val scanner = adapter?.bluetoothLeScanner
@@ -212,15 +223,38 @@ class ScanViewModel(app: Application) : AndroidViewModel(app) {
         val old = live[r.device.address]
         val seen = parseScan(r, old, now)
         val kind = seen.kind
-        val name = seen.name
         val address = seen.address
-        val fingerprint = seen.fingerprint
 
-        live[address] = seen
         if (kind == TrackerKind.GOOGLE_FIND_HUB || kind == TrackerKind.GOOGLE_FIND_HUB_SEPARATED) {
             serviceData16(r)[AdvertParser.EDDYSTONE_UUID16]?.let { com.example.trackerfinder.findhub.BeaconBattery.onAdvert(getApplication(), address, it) }
         }
         FindPhone.onAdvert(getApplication(), r)
+        onSeen(seen, r.rssi, now)
+    }
+
+    /** A Wi-Fi network was heard (scan result, or the connected network's live signal). */
+    private fun onWifi(h: WifiHeard) {
+        val now = SystemClock.elapsedRealtime()
+        val heardAt = now - h.ageMs
+        val old = live[h.bssid]
+        if (old != null && heardAt <= old.lastSeen) return // same reading delivered again
+        // Wi-Fi routers transmit far stronger than a coin-cell tag; shift onto the tag scale so
+        // distance, zones and beeps mean the same thing (shown back as real dBm in the lists).
+        val rssi = h.rssi - WIFI_OFFSET
+        val seen = SeenDevice(
+            address = h.bssid, name = h.ssid ?: old?.name, kind = TrackerKind.WIFI,
+            fingerprint = "wifi|" + (h.ssid ?: ""), rssi = rssi,
+            firstSeen = old?.firstSeen ?: heardAt, lastSeen = heardAt,
+        )
+        onSeen(seen, rssi, heardAt)
+    }
+
+    private fun onSeen(seen: SeenDevice, rssi: Int, now: Long) {
+        val kind = seen.kind
+        val name = seen.name
+        val address = seen.address
+        val fingerprint = seen.fingerprint
+        live[address] = seen
         // Presence feeds the widget and left-behind alerts.
         var presenceChanged = false
         _favorites.value.forEach { if (it.matches(seen)) presenceChanged = Presence.heard(getApplication(), it.id) || presenceChanged }
@@ -234,21 +268,21 @@ class ScanViewModel(app: Application) : AndroidViewModel(app) {
         val t = _track.value ?: return
         if (t.searching) return // the tick loop picks the best candidate
         if (address == t.address) {
-            val s = filter.add(r.rssi)
-            _track.value = t.copy(rawRssi = r.rssi, smoothed = s, lastSeen = now, kind = kind, samples = t.samples + 1)
+            val s = filter.add(rssi)
+            _track.value = t.copy(rawRssi = rssi, smoothed = s, lastSeen = now, kind = kind, samples = t.samples + 1)
             return
         }
         // Trackers change their Bluetooth address every ~15 minutes for privacy.
         // Follow-on rule (a guess, not a guarantee): if our target went quiet and a new device
         // with the same type signature appeared after it went quiet, assume it's the same tracker.
         val firstSeen = live[address]?.firstSeen ?: now
-        val followable = t.kind.isTracker || t.name != null
+        val followable = t.kind != TrackerKind.WIFI && (t.kind.isTracker || t.name != null)
         if (followable && fingerprint == t.fingerprint && now - t.lastSeen > LOST_AFTER_MS &&
             firstSeen >= t.lastSeen - 1_000
         ) {
-            val s = filter.add(r.rssi)
+            val s = filter.add(rssi)
             _track.value = t.copy(
-                address = address, kind = kind, name = name ?: t.name, rawRssi = r.rssi,
+                address = address, kind = kind, name = name ?: t.name, rawRssi = rssi,
                 smoothed = s, lastSeen = now, addressChanges = t.addressChanges + 1, samples = t.samples + 1,
             )
             t.favoriteId?.let { id -> touchFavorites({ it.id == id }, address) }
@@ -270,7 +304,7 @@ class ScanViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     private fun openOn(device: SeenDevice, favoriteId: String?) {
-        filter.reset()
+        filter = filterFor(device.kind)
         val s = filter.add(device.rssi)
         _track.value = TrackState(
             address = device.address, kind = device.kind, fingerprint = device.fingerprint,
@@ -288,7 +322,7 @@ class ScanViewModel(app: Application) : AndroidViewModel(app) {
         if (match != null) {
             openOn(match, fav.id)
         } else {
-            filter.reset()
+            filter = filterFor(fav.kind)
             _track.value = TrackState(
                 address = "", kind = fav.kind, fingerprint = fav.fingerprint, name = fav.name,
                 rawRssi = null, smoothed = null, lastSeen = 0, history = emptyList(),
@@ -372,7 +406,7 @@ class ScanViewModel(app: Application) : AndroidViewModel(app) {
             delay(500)
             ticks++
             val now = SystemClock.elapsedRealtime()
-            live.values.removeAll { now - it.lastSeen >= DEVICE_EXPIRE_MS }
+            live.values.removeAll { now - it.lastSeen >= expireAfter(it.kind) }
             _devices.value = HashMap(live)
 
             // A favorite we're searching for: wait ~3 s after scanning starts so every nearby
@@ -385,7 +419,7 @@ class ScanViewModel(app: Application) : AndroidViewModel(app) {
 
             _track.update { t ->
                 if (t == null || t.searching) return@update t
-                val fresh = now - t.lastSeen < LOST_AFTER_MS
+                val fresh = now - t.lastSeen < lostAfter(t.kind)
                 val sample = if (fresh) (t.smoothed ?: -100.0).toFloat() else -100f
                 val hist = (t.history + sample).takeLast(HISTORY_SAMPLES)
                 val lookalikes = if (!t.kind.isTracker) 0 else _devices.value.values.count {
@@ -415,7 +449,7 @@ class ScanViewModel(app: Application) : AndroidViewModel(app) {
             val s = t?.smoothed
             val wantBeep = _beep.value
             val wantBuzz = _vibrate.value
-            if ((wantBeep || wantBuzz) && t != null && !t.searching && s != null && now - t.lastSeen < LOST_AFTER_MS) {
+            if ((wantBeep || wantBuzz) && t != null && !t.searching && s != null && now - t.lastSeen < lostAfter(t.kind)) {
                 if (wantBeep) tone?.startTone(ToneGenerator.TONE_PROP_BEEP, 60)
                 if (wantBuzz) runCatching {
                     vibrator?.vibrate(VibrationEffect.createOneShot(45, VibrationEffect.DEFAULT_AMPLITUDE))
@@ -439,5 +473,12 @@ class ScanViewModel(app: Application) : AndroidViewModel(app) {
         const val DEVICE_EXPIRE_MS = 30_000L
         const val HISTORY_SAMPLES = 120 // 60 s at 2 samples/s
         const val AUTO_OPEN_WAIT_MS = 3_000L
+        /** dB subtracted from Wi-Fi readings so a router 1 m away reads like a tag 1 m away. */
+        const val WIFI_OFFSET = 20
+        /** Wi-Fi is scanned every 30 s at best, so allow much longer gaps before "lost". */
+        fun lostAfter(kind: TrackerKind) = if (kind == TrackerKind.WIFI) 75_000L else LOST_AFTER_MS
+        fun expireAfter(kind: TrackerKind) = if (kind == TrackerKind.WIFI) 100_000L else DEVICE_EXPIRE_MS
+        /** Sparse Wi-Fi readings need lighter smoothing or the number lags by minutes. */
+        fun filterFor(kind: TrackerKind) = if (kind == TrackerKind.WIFI) SignalFilter(windowSize = 3, alpha = 0.6) else SignalFilter()
     }
 }

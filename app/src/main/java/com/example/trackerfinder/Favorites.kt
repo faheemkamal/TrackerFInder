@@ -18,7 +18,7 @@ data class Favorite(
     val alertWhenLeft: Boolean = false,
 ) {
     /** A nameless generic device has no usable signature, so only its address can match. */
-    val canMatchByType: Boolean get() = kind.isTracker || name != null
+    val canMatchByType: Boolean get() = kind != TrackerKind.WIFI && (kind.isTracker || name != null)
 
     fun matchesExactly(d: SeenDevice) = d.address == lastAddress
     fun matchesByType(d: SeenDevice) = canMatchByType && d.fingerprint == fingerprint

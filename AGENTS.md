@@ -22,7 +22,7 @@ checked on a device when reporting results.
 ```
 - Lint must have **0 errors** (it fails the build); warnings are tolerated.
 - Bump `versionCode`/`versionName` in `app/build.gradle.kts` **and** the version text at the bottom
-  of `ui/MoreScreen.kt` for every delivered build. Current: 20 / "5.0".
+  of `ui/MoreScreen.kt` for every delivered build. Current: 21 / "5.1".
 - Release is signed with the debug key on purpose so new APKs install over old ones. If you change the
   signing key, the owner must uninstall (and loses local data) - ask first.
 - Robolectric/screenshot tests were not set up (Maven Central throttling in the build environment).
@@ -35,6 +35,7 @@ checked on a device when reporting results.
 | `MainActivity.kt` | Permissions, app lock gate, tabs (`Tab` enum: HOME, NEARBY, MAP, FAVORITES, MORE), scan-mode per tab, keep-screen-on in finder, BT state receiver, deep links (`EXTRA_FAVORITE_ID`, `EXTRA_HUB_DEVICE_ID`). |
 | `ScanViewModel.kt` | BLE scanning (`ScanMode` FAST/BALANCED/OFF + boost), device map (published every 500 ms), finder state, favorites, beep/vibrate. Feeds `BeaconBattery` and `FindPhone`. |
 | `Advert.kt`, `ScanParsing.kt`, `Signal.kt` | Advert classification and fingerprints, `advertTokens`, RSSI smoothing, zones, distance model. |
+| `WifiScan.kt` | Wi-Fi networks for Nearby and the finder: `startScan` every 30 s (5 s if throttling is off), scan-results receiver, connected network RSSI every 1 s. Fed into `ScanViewModel.onWifi` as `SeenDevice(kind = WIFI, address = BSSID)`. |
 | `Favorites.kt`, `Presence.kt` | Saved trackers (JSON in prefs `settings`), last-heard times (prefs `presence`). |
 | `MonitorService.kt` | Foreground service (type location): filtered BALANCED scans for left-behind alerts and Find my phone. |
 | `FindPhone.kt` | Button-press learning, matching, `PhoneAlarm`, `StopAlarmReceiver`. |
@@ -92,6 +93,10 @@ Python (`app/src/main/python/`): `tagapp.py` (functions Kotlin calls, return JSO
 - Keep `TagMap` callback params stable (`remember`) so a GPS fix doesn't restart effects.
 - Android allows ~5 BLE scan starts per 30 s per app; `ScanViewModel.applyScan` throttles. Don't add
   code that restarts scans in a loop.
+- Wi-Fi devices share the Bluetooth pipeline: their RSSI is stored minus `WIFI_OFFSET` (20 dB) so zones,
+  distance and beeps match the tag scale (`SeenDevice.realRssi` shows real dBm). Wi-Fi uses longer
+  lost/expire windows (`lostAfter`/`expireAfter`) and lighter smoothing (`filterFor`). Left-behind
+  alerts and calibration are Bluetooth-only.
 - Background BLE needs a foreground service of type location and **filtered** scans to work with the
   screen off.
 - WorkManager periodic minimum is 15 min, hence self-chaining. Only jobs tagged `findhub-chain` may

@@ -171,7 +171,8 @@ private fun FavoriteCard(
                     }
                     IconButton(onClick = { menu = true }) { Icon(Icons.Filled.MoreVert, "More") }
                     DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
-                        DropdownMenuItem(
+                        // Left-behind alerts use background Bluetooth scans; Wi-Fi can't be watched that way.
+                        if (fav.kind != com.example.trackerfinder.TrackerKind.WIFI || fav.alertWhenLeft) DropdownMenuItem(
                             text = { Text(if (fav.alertWhenLeft) "Turn off left-behind alert" else "Alert me if left behind") },
                             leadingIcon = { Icon(Icons.Filled.Notifications, null) },
                             onClick = { menu = false; onToggleAlert() },

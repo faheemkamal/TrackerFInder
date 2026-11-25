@@ -337,6 +337,25 @@ alert" opens a full-screen editor (`ui/AreaAlertEditor.kt`):
 - Checking is unchanged: `PollWorker.checkGeofences` after each background check, alerting on
   inside->outside and outside->inside.
 
+## 5.1 - Wi-Fi finder
+
+The owner: "In the nearby, can you add a wifi tracker and the ability for it to be added to favorites.
+Give the same features of hot and cold tracking. Distance and direction. Beeps". Nearby now has a
+**Wi-Fi** filter beside Trackers and All. Wi-Fi networks join the same device map as Bluetooth
+(`TrackerKind.WIFI`, address = BSSID), so the finder (signal, zone, distance, trend, direction
+sweep, beeps and vibration) and favorites work unchanged.
+- `WifiScan.kt` asks for a scan every 30 s. Android allows 4 per 2 minutes in the foreground, so that
+  is the fastest that works; if Developer options "Wi-Fi scan throttling" is off, it scans every 5 s.
+  The connected network's RSSI is read every second from `WifiManager.connectionInfo`, with no scan.
+- Routers are much stronger than a coin-cell tag, so Wi-Fi RSSI is stored minus 20 dB. This puts
+  "1 m from a router" near the tag's 1 m reference. It's a rough guess, and there is no calibration
+  for Wi-Fi.
+- Wi-Fi gets longer "lost" (75 s) and expiry (100 s) windows and lighter smoothing, so sparse
+  readings don't flicker or lag. Look-alike following and left-behind alerts are off for Wi-Fi.
+- Wi-Fi scanning runs whenever Bluetooth scanning does (Home, Nearby, Favorites, finder), so saved
+  networks show as in range. New permissions: ACCESS_WIFI_STATE and CHANGE_WIFI_STATE; results also
+  need location, which the app already has.
+
 ## Repository upload
 
 The owner asked for the project on GitHub with detailed commit messages, the APK, and documentation

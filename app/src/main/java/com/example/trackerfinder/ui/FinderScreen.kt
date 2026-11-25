@@ -79,7 +79,7 @@ fun FinderScreen(vm: ScanViewModel, t: TrackState) {
     LaunchedEffect(Unit) { while (true) { delay(500); now = SystemClock.elapsedRealtime() } }
 
     val lostFor = now - t.lastSeen
-    val lost = !t.searching && lostFor > ScanViewModel.LOST_AFTER_MS
+    val lost = !t.searching && lostFor > ScanViewModel.lostAfter(t.kind)
     val s = t.smoothed
     val heat = if (t.searching || lost || s == null) null else Proximity.heat(s)
     val zone = s?.let { Proximity.zone(it, rssiAt1m) }
@@ -152,7 +152,7 @@ fun FinderScreen(vm: ScanViewModel, t: TrackState) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 StatTile("Signal", if (s == null || t.searching) "–" else "${s.toInt()}", Modifier.weight(1f))
                 StatTile("Distance*", if (s == null || lost || t.searching) "–" else formatMeters(Proximity.estimateMeters(s, rssiAt1m)), Modifier.weight(1f))
-                StatTile("Raw dBm", t.rawRssi?.toString() ?: "–", Modifier.weight(1f))
+                StatTile("Raw dBm", t.rawRssi?.let { if (t.kind == com.example.trackerfinder.TrackerKind.WIFI) it + ScanViewModel.WIFI_OFFSET else it }?.toString() ?: "–", Modifier.weight(1f))
             }
             Spacer(Modifier.height(12.dp))
 
@@ -163,6 +163,17 @@ fun FinderScreen(vm: ScanViewModel, t: TrackState) {
             }
             Spacer(Modifier.height(12.dp))
 
+            if (t.kind == com.example.trackerfinder.TrackerKind.WIFI) {
+                SectionCard(container = MaterialTheme.colorScheme.secondaryContainer) {
+                    Text(
+                        if (vm.wifiThrottled()) "Wi-Fi updates about every 30 seconds (an Android limit), so walk slowly and pause. " +
+                            "If you're connected to this network it updates every second. For faster updates: Developer options → turn off \"Wi-Fi scan throttling\"."
+                        else "Wi-Fi scan throttling is off: updates every few seconds.",
+                        color = MaterialTheme.colorScheme.onSecondaryContainer, style = MaterialTheme.typography.bodySmall,
+                    )
+                }
+                Spacer(Modifier.height(12.dp))
+            }
             if (t.lookalikes > 0) {
                 SectionCard(container = MaterialTheme.colorScheme.errorContainer) {
                     Row(verticalAlignment = Alignment.Top) {
@@ -198,6 +209,7 @@ fun FinderScreen(vm: ScanViewModel, t: TrackState) {
                     }
                     Switch(checked = vibrate, onCheckedChange = vm::setVibrate)
                 }
+                if (t.kind != com.example.trackerfinder.TrackerKind.WIFI) {
                 Spacer(Modifier.height(12.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     OutlinedButton(onClick = vm::calibrate, enabled = s != null && !lost && !t.searching) { Text("Calibrate at 1 m") }
@@ -207,6 +219,7 @@ fun FinderScreen(vm: ScanViewModel, t: TrackState) {
                     "Put the tracker 1 m away in open space, wait 5 seconds, then tap Calibrate. Reference: $rssiAt1m dBm.",
                     style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+                }
             }
             Spacer(Modifier.height(12.dp))
 

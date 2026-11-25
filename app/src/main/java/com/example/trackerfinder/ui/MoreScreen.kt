@@ -229,7 +229,7 @@ fun MoreScreen(
         }
         Spacer(Modifier.height(24.dp))
         Text(
-            "Tracker Finder 5.0",
+            "Tracker Finder 5.1",
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),

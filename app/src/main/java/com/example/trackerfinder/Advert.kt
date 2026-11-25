@@ -18,6 +18,8 @@ enum class TrackerKind(val label: String, val isTracker: Boolean) {
     APPLE_FIND_MY("Apple Find My tracker", true),
     NAMED_HOCO("Hoco device", true),
     OTHER("Bluetooth device", false),
+    /** A Wi-Fi access point or hotspot (found by Wi-Fi scan, address = BSSID). */
+    WIFI("Wi-Fi network", false),
 }
 
 object AdvertParser {
@@ -69,6 +71,7 @@ object AdvertParser {
             TrackerKind.FAST_PAIR -> "fastpair:" + (serviceData16[FAST_PAIR_UUID16]?.size ?: 0)
             TrackerKind.APPLE_FIND_MY -> "findmy:" + (manufacturerData[APPLE_COMPANY_ID]?.size ?: 0)
             TrackerKind.NAMED_HOCO, TrackerKind.OTHER -> "named"
+            TrackerKind.WIFI -> "wifi"
         }
         // Names often arrive in only some adverts, so they're used only when nothing better exists.
         val useName = name != null && (kind == TrackerKind.NAMED_HOCO || kind == TrackerKind.OTHER)
