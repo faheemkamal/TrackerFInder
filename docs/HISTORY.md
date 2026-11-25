@@ -375,6 +375,20 @@ which ones are 2.4ghz".
   rise when the band changes. Channel load sums the strength of networks overlapping each 20 MHz
   channel. On 2.4 GHz the recommendation is among 1, 6 and 11, the only channels that don't overlap.
 
+## 5.3 - Home without Wi-Fi, "My favorites", smooth spectrum curves
+
+The owner made three requests:
+- Saved Wi-Fi networks appeared under Home's "Nearby trackers (Bluetooth)". Home now filters favorites
+  to non-Wi-Fi ones; that covers the section, the header count and left-behind count. Wi-Fi favorites
+  stay in the Favorites tab.
+- The Favorites tab heading "My trackers" is now "My favorites".
+- They asked why the spectrum humps had flat tops. The honest answer: the flat top loosely copied a
+  real Wi-Fi channel's spectral mask, where power is roughly level across the channel and then falls
+  off at the edges. But the phone gives one signal number per network, not power per MHz, so the
+  chart's shape is only a picture and the flat top suggested detail the app doesn't measure. Each
+  network is now a smooth parabolic arch (a quadratic Bézier from edge to edge, peaking at its dBm in
+  the channel centre), the look used by common Wi-Fi analyser apps.
+
 ## Repository upload
 
 The owner asked for the project on GitHub with detailed commit messages, the APK, and documentation

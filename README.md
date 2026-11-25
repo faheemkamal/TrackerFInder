@@ -9,7 +9,7 @@ person's personal use. It does two jobs:
    with an unofficial client and shows the tag's reported locations on a map, keeps a history, and
    sends alerts. This part comes from [Tag Tracker Open](#licence-and-credits) and GoogleFindMyTools.
 
-> Current version: **5.2** (versionCode 22); 4.7.2 was confirmed working on the owner's phone. Ready-to-install APK: [`releases/TrackerFinder-5.2.apk`](releases/TrackerFinder-5.0.apk).
+> Current version: **5.3** (versionCode 23); 4.7.2 was confirmed working on the owner's phone. Ready-to-install APK: [`releases/TrackerFinder-5.3.apk`](releases/TrackerFinder-5.0.apk).
 > Full step-by-step story and design decisions: [`docs/HISTORY.md`](docs/HISTORY.md).
 > Notes for AI agents and new developers: [`AGENTS.md`](AGENTS.md).
 
@@ -44,7 +44,7 @@ reports back. See [Known limitations](#known-limitations-and-untested-areas).
   each with a coloured band badge, 2.4 / 5 / 6 GHz, plus its channel and channel width) and
   **Wi-Fi spectrum**. Tap a device or network to open the hot/cold finder (which shows the Wi-Fi
   channel under the name); star it there to save it.
-- **Wi-Fi spectrum:** the classic channel chart, one coloured hump per network, centred on its
+- **Wi-Fi spectrum:** the classic channel chart, one smooth coloured arch per network, centred on its
   channel, as wide as its channel width and as tall as its signal, for 2.4, 5 and 6 GHz. Overlapping
   humps show busy channels. Below it: a channel-load bar per channel (networks weighted by
   strength), the busiest channel, the quietest choice (on 2.4 GHz among 1, 6 and 11), and a colour
@@ -112,7 +112,7 @@ reports back. See [Known limitations](#known-limitations-and-untested-areas).
   name when it reports one ("Google says: Home"), "your phone" for reports from your own phone.
   Tap one to jump the replay to it.
 
-### 6. Favorites tab (saved Bluetooth trackers and Wi-Fi networks)
+### 6. Favorites tab ("My favorites": saved Bluetooth trackers and Wi-Fi networks)
 - Each saved tracker with nickname, type, live status (In range / Possibly nearby with count of
   look-alikes / Last seen …) and **Find**.
 - Menu: **Alert me if left behind** on/off (Bluetooth only), Rename, Open in Find Hub, Remove (with confirmation).

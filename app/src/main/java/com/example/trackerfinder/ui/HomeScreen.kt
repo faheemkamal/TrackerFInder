@@ -67,7 +67,9 @@ fun HomeScreen(
 ) {
     val ctx = LocalContext.current
     val ui by hub.ui.collectAsStateWithLifecycle()
-    val favorites by vm.favorites.collectAsStateWithLifecycle()
+    val allFavorites by vm.favorites.collectAsStateWithLifecycle()
+    // Home is about Bluetooth trackers; saved Wi-Fi networks live in the Favorites tab only.
+    val favorites = remember(allFavorites) { allFavorites.filter { it.kind != com.example.trackerfinder.TrackerKind.WIFI } }
     val devices by vm.devices.collectAsStateWithLifecycle()
     val rssiAt1m by vm.rssiAt1m.collectAsStateWithLifecycle()
     val connected = ui.account?.connected == true

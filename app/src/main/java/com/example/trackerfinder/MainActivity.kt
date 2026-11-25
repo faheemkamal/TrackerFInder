@@ -249,7 +249,7 @@ enum class Tab(val label: String, val selected: ImageVector, val unselected: Ima
     HOME("Home", Icons.Filled.Home, Icons.Outlined.Home, "Tracker Finder"),
     NEARBY("Nearby", Icons.Filled.Search, Icons.Outlined.Search, "Nearby"),
     MAP("Map", Icons.Filled.LocationOn, Icons.Outlined.LocationOn, "Find Hub"),
-    FAVORITES("Favorites", Icons.Filled.Star, Icons.Outlined.Star, "My trackers"),
+    FAVORITES("Favorites", Icons.Filled.Star, Icons.Outlined.Star, "My favorites"),
     MORE("More", Icons.Filled.Menu, Icons.Outlined.Menu, "More"),
 }
 

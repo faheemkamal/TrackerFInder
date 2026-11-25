@@ -167,11 +167,12 @@ private fun SpectrumChart(band: Band, nets: List<WifiHeard>, modifier: Modifier)
             val x0 = x(lo); val x1 = x(hi)
             val ww = x1 - x0
             val peak = y(minDb + (n.rssi - minDb) * rise)
+            // A smooth arch (parabola) peaking at the network's signal in the channel centre. This is
+            // only a picture: the phone reports one signal number per network, not power per MHz.
+            val mid = (x0 + x1) / 2
             val p = Path().apply {
                 moveTo(x0, bottom)
-                cubicTo(x0 + ww * 0.08f, peak, x0 + ww * 0.12f, peak, x0 + ww * 0.25f, peak)
-                lineTo(x1 - ww * 0.25f, peak)
-                cubicTo(x1 - ww * 0.12f, peak, x1 - ww * 0.08f, peak, x1, bottom)
+                quadraticTo(mid, 2 * peak - bottom, x1, bottom)
             }
             val c = colorFor(n.bssid)
             drawPath(p, c.copy(alpha = 0.16f))
