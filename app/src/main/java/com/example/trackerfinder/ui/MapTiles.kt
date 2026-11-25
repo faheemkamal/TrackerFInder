@@ -103,29 +103,42 @@ object MapTiles {
             raster("https://tile.openstreetmap.org/{z}/{x}/{y}.png", attribution(p), invert = dark, bg = if (dark) "#1b1b1f" else "#f2efe9"),
         )
         MapProvider.ESRI -> Style.Builder().fromJson(
-            raster(
-                if (dark) "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}"
-                else "https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}",
-                attribution(p), invert = false, bg = if (dark) "#242424" else "#f2efe9",
+            if (dark) raster(
+                // Esri's dark canvas only has tiles up to zoom 16 (deeper it sends "Map data not yet
+                // available" images), so MapLibre enlarges zoom-16 tiles beyond that. Street and place
+                // names come from its matching label layer on top.
+                "$ESRI/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}",
+                attribution(p), invert = false, bg = "#242424", maxZoom = 16,
+                labels = "$ESRI/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}",
+            ) else raster(
+                "$ESRI/World_Street_Map/MapServer/tile/{z}/{y}/{x}",
+                attribution(p), invert = false, bg = "#f2efe9",
             ),
         )
     }
 
-    /** A one-layer style for a raster tile server. Dark mode on OSM flips brightness and hue. */
-    private fun raster(url: String, credit: String, invert: Boolean, bg: String): String {
+    private const val ESRI = "https://server.arcgisonline.com/ArcGIS/rest/services"
+
+    /**
+     * A one-layer style for a raster tile server (plus an optional label layer on top). Dark mode on
+     * OSM flips brightness and hue. [maxZoom] is the deepest zoom the server has tiles for.
+     */
+    private fun raster(url: String, credit: String, invert: Boolean, bg: String, maxZoom: Int = 19, labels: String? = null): String {
         val paint = JSONObject()
         if (invert) {
             paint.put("raster-brightness-min", 1).put("raster-brightness-max", 0)
                 .put("raster-hue-rotate", 180).put("raster-saturation", -0.3)
         }
-        return JSONObject()
-            .put("version", 8)
-            .put("sources", JSONObject().put("base", JSONObject()
-                .put("type", "raster").put("tiles", JSONArray().put(url))
-                .put("tileSize", 256).put("maxzoom", 19).put("attribution", credit)))
-            .put("layers", JSONArray()
-                .put(JSONObject().put("id", "bg").put("type", "background").put("paint", JSONObject().put("background-color", bg)))
-                .put(JSONObject().put("id", "base").put("type", "raster").put("source", "base").put("paint", paint)))
-            .toString()
+        fun source(u: String) = JSONObject().put("type", "raster").put("tiles", JSONArray().put(u))
+            .put("tileSize", 256).put("maxzoom", maxZoom).put("attribution", credit)
+        val sources = JSONObject().put("base", source(url))
+        val layers = JSONArray()
+            .put(JSONObject().put("id", "bg").put("type", "background").put("paint", JSONObject().put("background-color", bg)))
+            .put(JSONObject().put("id", "base").put("type", "raster").put("source", "base").put("paint", paint))
+        if (labels != null) {
+            sources.put("labels", source(labels))
+            layers.put(JSONObject().put("id", "labels").put("type", "raster").put("source", "labels"))
+        }
+        return JSONObject().put("version", 8).put("sources", sources).put("layers", layers).toString()
     }
 }

@@ -437,6 +437,14 @@ matched by OpenMapTiles source layer + id keywords, so new/renamed layers still 
 shields keep their own text colour. No Google assets or colours copied. The build environment can't reach
 tiles.openfreemap.org, so the look was not previewed before release.
 
+## 5.7: Esri dark map fix
+The owner's screenshot showed Esri in dark mode as grey "Map data not yet available" tiles at street
+zoom in Dhaka. Esri's Canvas/World_Dark_Gray_Base only has tiles to zoom 16; the source said 19, so
+MapLibre asked for deeper tiles and got Esri's placeholder images. The dark source now has
+`maxzoom 16` (MapLibre enlarges zoom-16 tiles when you zoom further), and the matching
+World_Dark_Gray_Reference label layer is drawn on top so street and place names show. `raster()` takes
+`maxZoom` and an optional `labels` URL. Not checked on a phone (the build environment can't reach Esri).
+
 ## Repository upload
 
 The owner asked for the project on GitHub with detailed commit messages, the APK, and documentation
