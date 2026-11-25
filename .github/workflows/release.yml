@@ -1,0 +1,34 @@
+# Put this file in the repo at: .github/workflows/release.yml
+# Publishes a GitHub Release automatically whenever a new APK lands in releases/ on main.
+name: Publish release
+
+on:
+  push:
+    branches: [main]
+    paths: ["releases/*.apk"]
+  workflow_dispatch: # lets you run it by hand from the Actions tab
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create release for the newest APK in releases/
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          apk=$(ls releases/TrackerFinder-*.apk | sort -V | tail -n1)
+          ver=$(basename "$apk" .apk); ver=${ver#TrackerFinder-}
+          tag="v$ver"
+          if gh release view "$tag" >/dev/null 2>&1; then
+            echo "Release $tag already exists, nothing to do"; exit 0
+          fi
+          # Release notes = this version's section of docs/HISTORY.md (falls back to the commit message).
+          awk -v v="$ver" '$0 ~ "^## "v" " {p=1; next} p && /^## / {exit} p' docs/HISTORY.md > notes.md || true
+          [ -s notes.md ] || git log -1 --pretty=%B > notes.md
+          printf '\n\nInstall: download the APK below on your phone and open it. It installs over the previous version.\n' >> notes.md
+          gh release create "$tag" "$apk" --target "$GITHUB_SHA" --title "Tracker Finder $ver" --notes-file notes.md --latest
