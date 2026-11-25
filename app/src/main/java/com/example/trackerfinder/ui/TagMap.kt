@@ -314,6 +314,35 @@ internal fun TagMap(
         } catch (e: Exception) { android.util.Log.w("TagMap", "map update failed", e) }
     }
 
+    // Bluetooth breadcrumbs (main map): where the phone last heard each favorite tag over Bluetooth.
+    // Read from prefs now and every 30 s while the map is open; recorded by Breadcrumbs.record.
+    LaunchedEffect(style, main) {
+        val s = style ?: return@LaunchedEffect
+        if (!main) return@LaunchedEffect
+        while (true) {
+            try {
+                val favs = com.example.trackerfinder.FavoritesStore.load(ctx.getSharedPreferences(com.example.trackerfinder.ScanViewModel.PREFS, Context.MODE_PRIVATE))
+                    .filter { it.kind != com.example.trackerfinder.TrackerKind.WIFI }
+                val feats = ArrayList<Feature>()
+                val lines = ArrayList<Feature>()
+                favs.forEach { f ->
+                    val crumbs = com.example.trackerfinder.Breadcrumbs.load(ctx, f.id)
+                    crumbs.forEachIndexed { i, c ->
+                        feats += Feature.fromGeometry(Point.fromLngLat(c.lon, c.lat)).apply {
+                            addStringProperty("name", f.nickname)
+                            addNumberProperty("at", c.at)
+                            addNumberProperty("last", if (i == crumbs.lastIndex) 1 else 0)
+                        }
+                    }
+                    if (crumbs.size >= 2) lines += Feature.fromGeometry(LineString.fromLngLats(crumbs.map { Point.fromLngLat(it.lon, it.lat) }))
+                }
+                s.src("crumbs")?.setGeoJson(FeatureCollection.fromFeatures(feats))
+                s.src("crumb-path")?.setGeoJson(FeatureCollection.fromFeatures(lines))
+            } catch (e: Exception) { android.util.Log.w("TagMap", "breadcrumbs failed", e) }
+            kotlinx.coroutines.delay(30_000)
+        }
+    }
+
     // Glow dot halo: two soft rings that keep spreading out from each tag (only while on screen).
     LaunchedEffect(style) {
         val s = style ?: return@LaunchedEffect
@@ -349,6 +378,9 @@ internal fun TagMap(
     }
 }
 
+/** Colour of Bluetooth breadcrumbs: distinct from the coral tags and the blue phone arrow. */
+private val BT_VIOLET = android.graphics.Color.rgb(124, 77, 255)
+
 /** Steps of recent movement shown behind the dot during heatmap playback. */
 private const val TRAIL = 8
 
@@ -359,7 +391,7 @@ private fun Style.put(id: String, f: Feature?) = src(id)?.setGeoJson(FeatureColl
 
 /** Our sources and layers on top of whichever base map is loaded. */
 private fun addLayers(s: Style) {
-    listOf("fence", "acc", "heat", "path-all", "path-done", "pts", "replay", "pulse", "me-acc", "me", "pins")
+    listOf("fence", "acc", "heat", "path-all", "path-done", "pts", "replay", "crumb-path", "crumbs", "pulse", "me-acc", "me", "pins")
         .forEach { if (s.getSource(it) == null) s.addSource(GeoJsonSource(it)) }
     fun add(l: Layer) { if (s.getLayer(l.id) == null) s.addLayer(l) }
     add(FillLayer("fence-fill", "fence").withProperties(PF.fillOpacity(0.13f)))
@@ -382,6 +414,15 @@ private fun addLayers(s: Style) {
     add(LineLayer("path-done", "path-done").withProperties(*round, PF.lineWidth(5f)))
     add(CircleLayer("pts", "pts").withProperties(PF.circleRadius(4.5f), PF.circleStrokeColor(android.graphics.Color.WHITE), PF.circleStrokeWidth(1.5f)))
     add(CircleLayer("replay", "replay").withProperties(PF.circleRadius(8f), PF.circleStrokeColor(android.graphics.Color.WHITE), PF.circleStrokeWidth(3f)))
+    // Bluetooth breadcrumbs: a faint dashed trail of small violet dots, the newest one bigger.
+    add(LineLayer("crumb-path", "crumb-path").withProperties(*round, PF.lineWidth(2f), PF.lineColor(BT_VIOLET),
+        PF.lineOpacity(0.45f), PF.lineDasharray(arrayOf(1.5f, 2f))))
+    add(CircleLayer("crumbs", "crumbs").withProperties(
+        PF.circleColor(BT_VIOLET), PF.circleStrokeColor(android.graphics.Color.WHITE),
+        PF.circleRadius(Expression.switchCase(Expression.eq(Expression.get("last"), Expression.literal(1)), Expression.literal(7f), Expression.literal(4f))),
+        PF.circleStrokeWidth(Expression.switchCase(Expression.eq(Expression.get("last"), Expression.literal(1)), Expression.literal(2.5f), Expression.literal(1f))),
+        PF.circleOpacity(Expression.switchCase(Expression.eq(Expression.get("last"), Expression.literal(1)), Expression.literal(1f), Expression.literal(0.6f))),
+    ))
     add(CircleLayer("pulse1", "pulse").withProperties(PF.circleOpacity(0f), PF.circlePitchAlignment(Property.CIRCLE_PITCH_ALIGNMENT_MAP)))
     add(CircleLayer("pulse2", "pulse").withProperties(PF.circleOpacity(0f), PF.circlePitchAlignment(Property.CIRCLE_PITCH_ALIGNMENT_MAP)))
     add(FillLayer("me-fill", "me-acc").withProperties(PF.fillOpacity(0.13f)))
@@ -407,6 +448,13 @@ private fun describeTap(ctx: Context, m: MapLibreMap, ll: LatLng, ui: HubUi): Bo
     m.queryRenderedFeatures(box, "pins").firstOrNull()?.let { f ->
         val d = ui.devices.firstOrNull { it.id == f.getStringProperty("id") } ?: return false
         Toast.makeText(ctx, d.name + (d.lastTs?.let { " · last seen " + formatAgo(it * 1000) } ?: ""), Toast.LENGTH_SHORT).show()
+        return true
+    }
+    m.queryRenderedFeatures(box, "crumbs").firstOrNull()?.let { f ->
+        val at = f.getNumberProperty("at")?.toLong() ?: return false
+        val name = f.getStringProperty("name") ?: "your tag"
+        val newest = f.getNumberProperty("last")?.toInt() == 1
+        Toast.makeText(ctx, (if (newest) "Your phone last heard $name over Bluetooth here, " else "Your phone heard $name over Bluetooth here, ") + formatAgo(at), Toast.LENGTH_LONG).show()
         return true
     }
     m.queryRenderedFeatures(box, "pts").firstOrNull()?.let { f ->

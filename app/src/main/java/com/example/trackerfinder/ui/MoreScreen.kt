@@ -62,7 +62,7 @@ fun MoreScreen(
     val beep by vm.beep.collectAsStateWithLifecycle()
     val vibrate by vm.vibrate.collectAsStateWithLifecycle()
     val favorites by vm.favorites.collectAsStateWithLifecycle()
-    val watched = favorites.count { it.alertWhenLeft }
+    val watched = favorites.count { it.alertWhenLeft && it.kind != com.example.trackerfinder.TrackerKind.WIFI }
     val rssiAt1m by vm.rssiAt1m.collectAsStateWithLifecycle()
     val clear = ListItemDefaults.colors(containerColor = Color.Transparent)
     var lockDialog by remember { mutableStateOf(false) }
@@ -229,7 +229,7 @@ fun MoreScreen(
         }
         Spacer(Modifier.height(24.dp))
         Text(
-            "Tracker Finder 5.4",
+            "Tracker Finder 5.5",
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),

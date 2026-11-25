@@ -22,7 +22,7 @@ checked on a device when reporting results.
 ```
 - Lint must have **0 errors** (it fails the build); warnings are tolerated.
 - Bump `versionCode`/`versionName` in `app/build.gradle.kts` **and** the version text at the bottom
-  of `ui/MoreScreen.kt` for every delivered build. Current: 24 / "5.4".
+  of `ui/MoreScreen.kt` for every delivered build. Current: 25 / "5.5".
 - Release is signed with the debug key on purpose so new APKs install over old ones. If you change the
   signing key, the owner must uninstall (and loses local data) - ask first.
 - Robolectric/screenshot tests were not set up (Maven Central throttling in the build environment).
@@ -35,10 +35,10 @@ checked on a device when reporting results.
 | `MainActivity.kt` | Permissions, app lock gate, tabs (`Tab` enum: HOME, NEARBY, MAP, FAVORITES, MORE), scan-mode per tab, keep-screen-on in finder, BT state receiver, deep links (`EXTRA_FAVORITE_ID`, `EXTRA_HUB_DEVICE_ID`). |
 | `ScanViewModel.kt` | BLE scanning (`ScanMode` FAST/BALANCED/OFF + boost), device map (published every 500 ms), finder state, favorites, beep/vibrate. Feeds `BeaconBattery` and `FindPhone`. |
 | `Advert.kt`, `ScanParsing.kt`, `Signal.kt` | Advert classification and fingerprints, `advertTokens`, RSSI smoothing, zones, distance model. |
-| `WifiScan.kt` | Wi-Fi networks for Nearby and the finder: `startScan` every 30 s (5 s if throttling is off), scan-results receiver, connected network RSSI every 1 s. Fed into `ScanViewModel.onWifi` as `SeenDevice(kind = WIFI, address = BSSID)`. |
+| `WifiScan.kt` | Wi-Fi networks for Nearby and the finder: `startScan` every 30 s (5 s if throttling is off), scan-results receiver, connected network RSSI every 1 s. Runs only while a Wi-Fi screen is open (`ScanViewModel.setWifiScreen`). Fed into `ScanViewModel.onWifi` as `SeenDevice(kind = WIFI, address = BSSID)`. |
 | `ui/WifiSpectrum.kt` | Nearby's Wi-Fi spectrum view: band chips, "Mine" chips + "Exclude my networks" (prefs `settings`: `wifi_mine`, `wifi_exclude_mine`), overlapping-hump channel chart (Canvas), channel load and quietest channel. Reads `ScanViewModel.wifiNets` (real dBm, frequency, width, centre). |
-| `Favorites.kt`, `Presence.kt` | Saved trackers (JSON in prefs `settings`), last-heard times (prefs `presence`). |
-| `MonitorService.kt` | Foreground service (type location): filtered BALANCED scans for left-behind alerts and Find my phone. |
+| `Favorites.kt`, `Presence.kt`, `Breadcrumbs.kt` | Saved trackers (JSON in prefs `settings`), last-heard times (prefs `presence`), where the phone heard each Bluetooth favorite (prefs `breadcrumbs`, drawn on the main map as violet `crumbs`). |
+| `MonitorService.kt` | Foreground service (type location): filtered BALANCED scans for left-behind alerts and Find my phone. `BootReceiver` restarts it after reboot/update (or posts a "paused, tap" notification, id 99000). |
 | `FindPhone.kt` | Button-press learning, matching, `PhoneAlarm`, `StopAlarmReceiver`. |
 | `AlertRules.kt` | Quiet hours and safe places. |
 | `Addresses.kt` | Geocoder + cache, `rememberAddress()` composable. |
@@ -102,11 +102,11 @@ Python (`app/src/main/python/`): `tagapp.py` (functions Kotlin calls, return JSO
   screen off.
 - WorkManager periodic minimum is 15 min, hence self-chaining. Only jobs tagged `findhub-chain` may
   re-schedule, otherwise checks double.
-- Notification ID ranges: Find Hub 4999-21400, find-my-phone 7700, left-behind 100000+.
+- Notification ID ranges: Find Hub 4999-21400, find-my-phone 7700, left-behind 100000+, paused-after-restart 99000.
 - R8 keeps `com.example.trackerfinder.**`; Chaquopy brings its own keep rules. If you add Python code
   that calls Java classes (`from java import ...`), add keep rules for them.
 - Native libs are stored compressed (`useLegacyPackaging = true`) to keep the APK ~26 MB instead of ~43 MB.
-- Wi-Fi scanning runs only in FAST mode or when a Wi-Fi favorite exists; `devices` republishes only when `liveDirty`.
+- **Wi-Fi scanning runs only while Nearby's Wi-Fi list/spectrum or a Wi-Fi finder is on screen** (owner's rule: never in the background, not even for Wi-Fi favorites). `devices` republishes only when `liveDirty`.
 - Release builds re-download Python packages through pip (unpinned pure-Python deps may move).
 
 ## Untested / risky areas

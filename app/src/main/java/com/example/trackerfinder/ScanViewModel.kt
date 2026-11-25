@@ -111,6 +111,14 @@ class ScanViewModel(app: Application) : AndroidViewModel(app) {
     fun wifiThrottled() = _wifiStatus.value.throttled
     /** Set when [live] changes, so [devices] is only republished when something actually moved. */
     @Volatile private var liveDirty = false
+    /** Wi-Fi screens on screen right now ("nearby", "finder"); Wi-Fi is scanned only while this isn't empty. */
+    private val wifiScreens = HashSet<String>()
+    fun setWifiScreen(key: String, open: Boolean) {
+        val changed = if (open) wifiScreens.add(key) else wifiScreens.remove(key)
+        if (!changed) return
+        if (active && wifiScreens.isNotEmpty()) { wifi.fast = true; refreshWifiStatus(); wifi.start() }
+        else if (wifiScreens.isEmpty()) wifi.stop()
+    }
     /** How hard to scan; picked by the screen that's showing (see [setScanMode]). */
     private var mode = ScanMode.BALANCED
     /** True between the activity's onStart and onStop. */
@@ -191,12 +199,11 @@ class ScanViewModel(app: Application) : AndroidViewModel(app) {
         if (scanning) stopScanOnly()
         // Wi-Fi alongside Bluetooth on Home, Favorites, Nearby and the finder (not on Map/More).
         // Android caps it at one scan per 30 s, so the battery cost is small.
-        // Wi-Fi only where it's shown: Nearby and the finder (FAST), or Favorites/Home when a Wi-Fi
-        // network is saved as a favorite. The connected network is read every second only in FAST.
-        val wantWifi = this.mode == ScanMode.FAST || (this.mode == ScanMode.BALANCED && _favorites.value.any { it.kind == TrackerKind.WIFI })
-        wifi.fast = this.mode == ScanMode.FAST
+        // Wi-Fi only while a Wi-Fi screen is open (Nearby's Wi-Fi list or spectrum, or the finder on a
+        // Wi-Fi network): never in the background or on other tabs, even for Wi-Fi favorites.
+        wifi.fast = true
         refreshWifiStatus()
-        if (wantWifi) wifi.start() else wifi.stop()
+        if (wifiScreens.isNotEmpty()) wifi.start() else wifi.stop()
         val mode = if (boost) ScanMode.FAST else mode
         if (mode == ScanMode.OFF) return
         val scanner = adapter?.bluetoothLeScanner
@@ -278,7 +285,12 @@ class ScanViewModel(app: Application) : AndroidViewModel(app) {
         liveDirty = true
         // Presence feeds the widget and left-behind alerts.
         var presenceChanged = false
-        _favorites.value.forEach { if (it.matches(seen)) presenceChanged = Presence.heard(getApplication(), it.id) || presenceChanged }
+        _favorites.value.forEach {
+            if (it.matches(seen) && Presence.heard(getApplication(), it.id)) {
+                presenceChanged = true
+                if (it.kind != TrackerKind.WIFI) Breadcrumbs.record(getApplication(), it.id)
+            }
+        }
         if (presenceChanged) FavoritesWidget.updateAll(getApplication())
         // Keep "last seen" fresh for favorites we can hear by their exact address.
         // (Throttled: rewriting the list on every advert made every screen redraw constantly.)
@@ -379,6 +391,7 @@ class ScanViewModel(app: Application) : AndroidViewModel(app) {
     fun removeFavorite(id: String) {
         _favorites.update { list -> list.filterNot { it.id == id } }
         Presence.forget(getApplication(), id)
+        Breadcrumbs.forget(getApplication(), id)
         _track.update { t -> if (t?.favoriteId == id) t.copy(favoriteId = null) else t }
         persistFavorites()
     }

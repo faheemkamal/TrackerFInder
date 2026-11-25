@@ -70,7 +70,7 @@ fun FavoritesScreen(
             EmptyState(
                 icon = Icons.Filled.Star,
                 title = "No favorites yet",
-                body = "Find your tracker in Nearby, open it, and tap the star. It'll live here so you can find it again with one tap.",
+                body = "Find your tracker (or a Wi-Fi network) in Nearby, open it, and tap the star. It'll live here so you can find it again with one tap.",
             ) {
                 Button(onClick = goToNearby) { Text("Go to Nearby") }
             }
@@ -101,7 +101,8 @@ fun FavoritesScreen(
         item {
             Text(
                 "Trackers hide their identity and change it every ~15 minutes, so \"Possibly nearby\" means a tracker " +
-                    "of the same type is in range. If you own several of the same model, the app can't always tell them apart.",
+                    "of the same type is in range. If you own several of the same model, the app can't always tell them apart. " +
+                    "Wi-Fi favorites are only checked while you're finding them, to save battery.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(horizontal = 4.dp),
@@ -111,7 +112,7 @@ fun FavoritesScreen(
 
     renaming?.let { fav ->
         NicknameDialog(
-            title = "Rename tracker",
+            title = "Rename favorite",
             initial = fav.nickname,
             confirm = "Save",
             onDismiss = { renaming = null },
@@ -122,7 +123,7 @@ fun FavoritesScreen(
         AlertDialog(
             onDismissRequest = { deleting = null },
             title = { Text("Remove ${fav.nickname}?") },
-            text = { Text("It will be removed from Favorites. The tracker itself isn't affected.") },
+            text = { Text("It will be removed from Favorites. The device itself isn't affected.") },
             confirmButton = { TextButton(onClick = { vm.removeFavorite(fav.id); deleting = null }) { Text("Remove") } },
             dismissButton = { TextButton(onClick = { deleting = null }) { Text("Cancel") } },
         )
@@ -178,7 +179,7 @@ private fun FavoriteCard(
                             onClick = { menu = false; onToggleAlert() },
                         )
                         DropdownMenuItem(text = { Text("Rename") }, leadingIcon = { Icon(Icons.Filled.Edit, null) }, onClick = { menu = false; onRename() })
-                        DropdownMenuItem(text = { Text("Open in Find Hub") }, leadingIcon = { Icon(Icons.Filled.LocationOn, null) }, onClick = { menu = false; onFindHub() })
+                        if (fav.kind != com.example.trackerfinder.TrackerKind.WIFI) DropdownMenuItem(text = { Text("Open in Find Hub") }, leadingIcon = { Icon(Icons.Filled.LocationOn, null) }, onClick = { menu = false; onFindHub() })
                         DropdownMenuItem(text = { Text("Remove") }, leadingIcon = { Icon(Icons.Filled.Delete, null) }, onClick = { menu = false; onDelete() })
                     }
                 }

@@ -408,6 +408,26 @@ out of the spectrum. Changes:
   (`wifi_exclude_mine`). When on, those networks leave the chart and the busiest/quietest channel
   maths, so the advice is about the neighbours only.
 
+## 5.5: alerts after restart, Bluetooth breadcrumbs, Wi-Fi only on screen, wording pass
+The owner picked two ideas from the 5.4 list and added rules:
+- **Restart:** `BootReceiver` (BOOT_COMPLETED and MY_PACKAGE_REPLACED) calls `MonitorService.sync(fromBoot = true)`.
+  Android 14+ may refuse a location-type foreground service started at boot; if `startForeground`
+  or the start itself fails, a "Left-behind alerts are paused, tap to turn them back on" notification
+  (id 99000) opens the app, whose onStart already re-syncs the monitor. Untested on the owner's phone.
+- **Bluetooth breadcrumbs:** `Breadcrumbs.record` runs whenever `Presence.heard` writes (every 10 s
+  per heard favorite, app or monitor, Bluetooth favorites only). It takes the phone's last known
+  position (passive, never starts GPS; fix under 2 min old and 150 m accuracy) and keeps the last 40
+  spots per favorite in prefs `breadcrumbs`, merging spots within 30 m. The main map draws them as
+  violet dots (`crumbs`, newest bigger) with a dashed trail (`crumb-path`); tapping one says when.
+- **Wi-Fi only on screen:** `ScanViewModel.setWifiScreen(key, open)`; Nearby's Wi-Fi list/spectrum
+  and the finder for a Wi-Fi network register while composed. Wi-Fi never scans on other tabs or in
+  the background, even for Wi-Fi favorites (they're checked when you tap Find).
+- **Wording/consistency pass:** Favorites texts no longer assume every favorite is a tracker
+  ("Rename favorite", "The device itself"), "Open in Find Hub" hidden for Wi-Fi favorites, Nearby
+  empty state names "All Bluetooth devices", finder search hint for Wi-Fi, left-behind monitor and
+  More's count ignore Wi-Fi favorites, Help covers Wi-Fi, the spectrum, breadcrumbs and restart, and
+  Privacy now lists OpenFreeMap among the tile sources.
+
 ## Repository upload
 
 The owner asked for the project on GitHub with detailed commit messages, the APK, and documentation

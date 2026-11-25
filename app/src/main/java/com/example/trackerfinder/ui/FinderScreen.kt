@@ -71,6 +71,13 @@ fun FinderScreen(vm: ScanViewModel, t: TrackState) {
     val vibrate by vm.vibrate.collectAsStateWithLifecycle()
     var directionMode by rememberSaveable { mutableStateOf(false) }
     val favorites by vm.favorites.collectAsStateWithLifecycle()
+    // Finding a Wi-Fi network: scan Wi-Fi only while this finder is open.
+    val findingWifi = t.kind == com.example.trackerfinder.TrackerKind.WIFI ||
+        favorites.firstOrNull { it.id == t.favoriteId }?.kind == com.example.trackerfinder.TrackerKind.WIFI
+    androidx.compose.runtime.DisposableEffect(findingWifi) {
+        vm.setWifiScreen("finder", findingWifi)
+        onDispose { vm.setWifiScreen("finder", false) }
+    }
     val fav = favorites.firstOrNull { it.id == t.favoriteId }
     var naming by remember { mutableStateOf(false) }
 
@@ -257,6 +264,7 @@ fun FinderScreen(vm: ScanViewModel, t: TrackState) {
 @Composable
 private fun TrendPill(t: TrackState, lost: Boolean) {
     val (text, color) = when {
+        t.searching && t.kind == com.example.trackerfinder.TrackerKind.WIFI -> "Walk around slowly; Wi-Fi updates take a while" to MaterialTheme.colorScheme.onSurfaceVariant
         t.searching -> "Press the tracker's button or walk around" to MaterialTheme.colorScheme.onSurfaceVariant
         lost -> "Walk around slowly to pick it up again" to MaterialTheme.colorScheme.onSurfaceVariant
         t.trend == Trend.WARMER -> "Getting warmer" to Color(0xFFE53935)

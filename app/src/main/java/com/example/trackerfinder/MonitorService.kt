@@ -90,7 +90,10 @@ class MonitorService : Service() {
         try {
             ServiceCompat.startForeground(this, ONGOING_ID, ongoingNotification(watched.size), type)
             shownCount = watched.size * 2 + if (FindPhone.enabled(this)) 1 else 0
+            getSystemService(NotificationManager::class.java).cancel(PAUSED_ID)
         } catch (e: Exception) {
+            // Some Android versions won't start location monitoring right after a restart.
+            if (intent?.getBooleanExtra(EXTRA_FROM_BOOT, false) == true) showPaused(this)
             stopSelf()
             return START_NOT_STICKY
         }
@@ -113,7 +116,7 @@ class MonitorService : Service() {
     }
 
     private fun watchedFavorites(): List<Favorite> =
-        FavoritesStore.load(getSharedPreferences(ScanViewModel.PREFS, Context.MODE_PRIVATE)).filter { it.alertWhenLeft }
+        FavoritesStore.load(getSharedPreferences(ScanViewModel.PREFS, Context.MODE_PRIVATE)).filter { it.alertWhenLeft && it.kind != TrackerKind.WIFI }
 
     @SuppressLint("MissingPermission")
     private fun restartScanIfNeeded(watched: List<Favorite>) {
@@ -178,7 +181,10 @@ class MonitorService : Service() {
         var changed = false
         watched.forEach { f ->
             if (f.matches(seen)) {
-                changed = Presence.heard(this, f.id) || changed
+                if (Presence.heard(this, f.id)) {
+                    changed = true
+                    Breadcrumbs.record(this, f.id)
+                }
                 armed += f.id
                 if (alerted.remove(f.id)) {
                     getSystemService(NotificationManager::class.java).cancel(alertId(f.id))
@@ -254,6 +260,9 @@ class MonitorService : Service() {
         private const val CHANNEL_ONGOING = "monitor"
         private const val CHANNEL_ALERTS = "left_behind"
         private const val ONGOING_ID = 1
+        /** "Alerts paused after restart, tap to resume" (outside the other ranges). */
+        private const val PAUSED_ID = 99_000
+        private const val EXTRA_FROM_BOOT = "from_boot"
         private const val TICK_MS = 15_000L
         /** How long a favorite must be silent before we call it "left behind". */
         const val LEFT_BEHIND_MS = 2 * 60_000L
@@ -282,16 +291,45 @@ class MonitorService : Service() {
          * Starts the monitor if any favorite has alerts on and it isn't running, or stops it if none do.
          * Starting only works while the app is in the foreground, so failures are ignored here.
          */
-        fun sync(ctx: Context) {
-            val any = FavoritesStore.load(ctx.getSharedPreferences(ScanViewModel.PREFS, Context.MODE_PRIVATE)).any { it.alertWhenLeft } ||
+        fun sync(ctx: Context, fromBoot: Boolean = false) {
+            val any = FavoritesStore.load(ctx.getSharedPreferences(ScanViewModel.PREFS, Context.MODE_PRIVATE)).any { it.alertWhenLeft && it.kind != TrackerKind.WIFI } ||
                 FindPhone.enabled(ctx)
-            val intent = Intent(ctx, MonitorService::class.java)
+            val intent = Intent(ctx, MonitorService::class.java).putExtra(EXTRA_FROM_BOOT, fromBoot)
             if (!any) {
                 if (running) ctx.stopService(intent)
                 return
             }
             if (running) return
             runCatching { ContextCompat.startForegroundService(ctx, intent) }
+                .onFailure { if (fromBoot) showPaused(ctx) }
         }
+
+        /** If Android refuses to start monitoring after a restart, ask for one tap to open the app (which resumes it). */
+        fun showPaused(ctx: Context) {
+            createChannels(ctx)
+            val open = PendingIntent.getActivity(
+                ctx, PAUSED_ID, Intent(ctx, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+            )
+            val n = NotificationCompat.Builder(ctx, CHANNEL_ALERTS)
+                .setSmallIcon(R.drawable.ic_stat_tracker)
+                .setContentTitle("Left-behind alerts are paused")
+                .setContentText("Your phone restarted. Tap to turn them back on.")
+                .setContentIntent(open).setAutoCancel(true)
+                .build()
+            runCatching { ctx.getSystemService(NotificationManager::class.java).notify(PAUSED_ID, n) }
+        }
+    }
+}
+
+/**
+ * Turns left-behind alerts (and Find my phone) back on after the phone restarts or the app is
+ * updated, without opening the app. If Android won't allow it, a notification asks for one tap.
+ */
+class BootReceiver : android.content.BroadcastReceiver() {
+    override fun onReceive(ctx: Context, i: Intent) {
+        if (i.action != Intent.ACTION_BOOT_COMPLETED && i.action != Intent.ACTION_MY_PACKAGE_REPLACED) return
+        MonitorService.createChannels(ctx)
+        MonitorService.sync(ctx, fromBoot = true)
     }
 }

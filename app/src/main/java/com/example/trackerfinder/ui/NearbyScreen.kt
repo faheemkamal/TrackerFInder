@@ -50,6 +50,11 @@ fun NearbyScreen(vm: ScanViewModel, contentPadding: PaddingValues) {
     val wifiStatus by vm.wifiStatus.collectAsStateWithLifecycle()
     // 0 = trackers, 1 = all Bluetooth devices, 2 = Wi-Fi networks, 3 = Wi-Fi spectrum
     var view by rememberSaveable { mutableIntStateOf(0) }
+    // Wi-Fi is scanned only while the Wi-Fi list or the spectrum is showing.
+    androidx.compose.runtime.DisposableEffect(view) {
+        vm.setWifiScreen("nearby", view >= 2)
+        onDispose { vm.setWifiScreen("nearby", false) }
+    }
     val trackersOnly = view == 0
     val wifiView = view == 2
     val shown = devices.values.filter {
@@ -119,8 +124,8 @@ fun NearbyScreen(vm: ScanViewModel, contentPadding: PaddingValues) {
                     icon = Icons.Filled.Search,
                     title = "Scanning…",
                     body = if (wifiView) "No Wi-Fi networks heard yet. The first scan can take up to 30 seconds. Location must be on."
-                    else if (trackersOnly) "No trackers heard yet. Press the tracker's button to wake it, or try All devices. " +
-                        "If even All devices stays empty, turn on Location in quick settings."
+                    else if (trackersOnly) "No trackers heard yet. Press the tracker's button to wake it, or try All Bluetooth devices. " +
+                        "If even that list stays empty, turn on Location in quick settings."
                     else "Nothing heard yet. Check that Bluetooth and Location are on.",
                 )
             }
